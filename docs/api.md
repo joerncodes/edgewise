@@ -54,6 +54,21 @@ with status `401`.
 | PATCH  | `/api/owners/{id}`  | partial input | `{ owner }`            |
 | DELETE | `/api/owners/{id}`  | —             | 204 (409 if in use)    |
 
+### Steels
+
+| Method | Path                | Body          | Returns                |
+|--------|---------------------|---------------|------------------------|
+| GET    | `/api/steels`       | —             | `{ steels: Steel[] }`  |
+| POST   | `/api/steels`       | `SteelInput`  | `{ steel }` (201)      |
+| GET    | `/api/steels/{id}`  | —             | `{ steel }`            |
+| PATCH  | `/api/steels/{id}`  | partial input | `{ steel }`            |
+| DELETE | `/api/steels/{id}`  | —             | 204 (409 if in use)    |
+
+`Knife.steel` is a soft FK: it should equal `slugify(Steel.id)` when a
+record exists, but the API does not reject unknown strings. Steel
+records can carry persistent markdown notes (rust care, sharpening
+behaviour, etc.) that live independently of any knife.
+
 ### Stats
 
 | Method | Path          | Body | Returns                            |
@@ -105,6 +120,13 @@ OwnerInput = {
   name: string
   contact?: string
   notes?: string
+}
+
+SteelInput = {
+  id?: string
+  name: string
+  composition?: string
+  notes?: string   // markdown
 }
 ```
 

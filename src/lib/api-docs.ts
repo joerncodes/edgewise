@@ -4,6 +4,8 @@ import {
   KnifeSchema,
   OwnerInputSchema,
   OwnerSchema,
+  SteelInputSchema,
+  SteelSchema,
   SharpeningSessionSchema,
   KnifeImageSchema,
 } from "@/lib/storage/types";
@@ -13,6 +15,8 @@ const SCHEMAS = {
   KnifeInput: KnifeInputSchema,
   Owner: OwnerSchema,
   OwnerInput: OwnerInputSchema,
+  Steel: SteelSchema,
+  SteelInput: SteelInputSchema,
   SharpeningSession: SharpeningSessionSchema,
   KnifeImage: KnifeImageSchema,
 } as const;
@@ -45,6 +49,11 @@ const ENDPOINTS = `\
 | GET    | \`/api/owners/{id}\`                    | —                  | \`{ owner }\`              |
 | PATCH  | \`/api/owners/{id}\`                    | partial \`OwnerInput\` | \`{ owner }\`           |
 | DELETE | \`/api/owners/{id}\`                    | —                  | 204 (409 if in use)      |
+| GET    | \`/api/steels\`                         | —                  | \`{ steels: Steel[] }\`    |
+| POST   | \`/api/steels\`                         | \`SteelInput\`       | \`{ steel }\` (201)        |
+| GET    | \`/api/steels/{id}\`                    | —                  | \`{ steel }\`              |
+| PATCH  | \`/api/steels/{id}\`                    | partial \`SteelInput\` | \`{ steel }\`          |
+| DELETE | \`/api/steels/{id}\`                    | —                  | 204 (409 if in use)      |
 | GET    | \`/api/stats\`                          | —                  | aggregate stats (see below) |
 | GET    | \`/api/docs\`                           | —                  | this document (markdown) |
 | GET    | \`/llms.txt\`                           | —                  | this document, unauth    |`;
@@ -81,9 +90,25 @@ curl -s -X POST $BASE/api/knives/wusthof-chef-8/images \\
 # Fetch this document
 curl -s $BASE/api/docs -H "Authorization: Bearer $TOKEN"
 
+# Add a steel (or backfill notes for a derived one)
+curl -s -X POST $BASE/api/steels \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H 'Content-Type: application/json' \\
+  -d '{"name":"80CrV2","composition":"0.8% C, 0.5% Cr, 0.15% V","notes":"High-carbon — wipe dry, oil occasionally."}'
+
 # Aggregate stats — sessions/month, per-owner counts, angle histogram, etc.
 curl -s $BASE/api/stats -H "Authorization: Bearer $TOKEN" | jq
 \`\`\`
+
+## Steels
+
+\`Knife.steel\` is a free-form string today; the matching \`Steel\`
+record (when it exists) carries persistent markdown notes about that
+steel — rust care, sharpening behaviour, anything worth keeping next
+to the alloy rather than next to a single knife. The link is by slug:
+\`slugify(Knife.steel) === Steel.id\`. Unknown strings are NOT rejected
+on knife create/patch; the steel page renders fine without a record
+and offers a no-notes-yet hint.
 
 ## Stats
 

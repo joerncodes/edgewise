@@ -1,5 +1,5 @@
 import type { Stats } from "./stats";
-import type { Knife, Owner, SharpeningSession } from "./storage/types";
+import type { Knife, Owner, SharpeningSession, Steel } from "./storage/types";
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
@@ -57,6 +57,19 @@ export const api = {
       body: JSON.stringify(body),
     }).then((r) => r.owner),
   deleteOwner: (id: string) => request<void>(`/api/owners/${id}`, { method: "DELETE" }),
+
+  listSteels: () => request<{ steels: Steel[] }>("/api/steels").then((r) => r.steels),
+  getSteel: (id: string) => request<{ steel: Steel }>(`/api/steels/${id}`).then((r) => r.steel),
+  createSteel: (body: Partial<Steel>) =>
+    request<{ steel: Steel }>("/api/steels", { method: "POST", body: JSON.stringify(body) }).then(
+      (r) => r.steel,
+    ),
+  updateSteel: (id: string, body: Partial<Steel>) =>
+    request<{ steel: Steel }>(`/api/steels/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }).then((r) => r.steel),
+  deleteSteel: (id: string) => request<void>(`/api/steels/${id}`, { method: "DELETE" }),
 
   getStats: () => request<Stats>("/api/stats"),
 };

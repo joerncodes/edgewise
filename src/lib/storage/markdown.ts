@@ -6,12 +6,14 @@ import YAML from "yaml";
 import {
   KnifeSchema,
   OwnerSchema,
+  SteelSchema,
   mimeFromFilename,
   type ImageMimeType,
   type ImageSize,
   type Knife,
   type KnifeImageBlob,
   type Owner,
+  type Steel,
   type Storage,
 } from "./types";
 
@@ -65,18 +67,21 @@ export class MarkdownStorage implements Storage {
   private dataDir: string;
   private knivesDir: string;
   private ownersDir: string;
+  private steelsDir: string;
   private imagesDir: string;
 
   constructor(opts: MarkdownStorageOptions) {
     this.dataDir = opts.dataDir;
     this.knivesDir = path.join(this.dataDir, "knives");
     this.ownersDir = path.join(this.dataDir, "owners");
+    this.steelsDir = path.join(this.dataDir, "steels");
     this.imagesDir = path.join(this.dataDir, "images");
   }
 
   private async ensureDirs() {
     await fs.mkdir(this.knivesDir, { recursive: true });
     await fs.mkdir(this.ownersDir, { recursive: true });
+    await fs.mkdir(this.steelsDir, { recursive: true });
     await fs.mkdir(this.imagesDir, { recursive: true });
   }
 
@@ -86,6 +91,10 @@ export class MarkdownStorage implements Storage {
 
   private ownerPath(id: string) {
     return path.join(this.ownersDir, `${id}.md`);
+  }
+
+  private steelPath(id: string) {
+    return path.join(this.steelsDir, `${id}.md`);
   }
 
   private knifeImagesDir(id: string) {
@@ -292,6 +301,56 @@ export class MarkdownStorage implements Storage {
   async deleteOwner(id: string): Promise<boolean> {
     try {
       await fs.unlink(this.ownerPath(id));
+      return true;
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === "ENOENT") return false;
+      throw err;
+    }
+  }
+
+  private parseSteel(raw: string): Steel {
+    const parsed = matter(raw);
+    const data = normalizeDates({
+      ...parsed.data,
+      notes: parsed.content.trim(),
+    });
+    return SteelSchema.parse(data);
+  }
+
+  private serializeSteel(steel: Steel): string {
+    const { notes, ...rest } = steel;
+    const fm = YAML.stringify(rest);
+    return `---\n${fm}---\n\n${notes ?? ""}\n`;
+  }
+
+  async listSteels(): Promise<Steel[]> {
+    await this.ensureDirs();
+    const entries = await fs.readdir(this.steelsDir);
+    const steels = await Promise.all(
+      entries
+        .filter((f) => f.endsWith(".md"))
+        .map(async (f) => {
+          const raw = await fs.readFile(path.join(this.steelsDir, f), "utf8");
+          return this.parseSteel(raw);
+        }),
+    );
+    return steels.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async getSteel(id: string): Promise<Steel | null> {
+    await this.ensureDirs();
+    const raw = await this.readFileOrNull(this.steelPath(id));
+    return raw ? this.parseSteel(raw) : null;
+  }
+
+  async saveSteel(steel: Steel): Promise<void> {
+    await this.ensureDirs();
+    await fs.writeFile(this.steelPath(steel.id), this.serializeSteel(steel), "utf8");
+  }
+
+  async deleteSteel(id: string): Promise<boolean> {
+    try {
+      await fs.unlink(this.steelPath(id));
       return true;
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code === "ENOENT") return false;

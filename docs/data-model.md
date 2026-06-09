@@ -9,6 +9,8 @@ $DATA_DIR/
     <slug>.md
   owners/
     <slug>.md
+  steels/
+    <slug>.md
   images/
     <knife-id>/
       <filename>
@@ -136,11 +138,55 @@ match the on-disk basenames.
 
 `angle` is per-session: a knife can be re-profiled over time.
 
+## Steel
+
+`steels/<id>.md`:
+
+```yaml
+---
+id: 80crv2
+name: 80CrV2
+composition: 0.8% C, 0.5% Cr, 0.15% V
+createdAt: 2026-06-09T12:00:00.000Z
+updatedAt: 2026-06-09T12:00:00.000Z
+---
+
+High-carbon steel. **Wipe dry after every use and oil occasionally**
+— it'll rust otherwise. Takes a fine edge on the 4000 grit, holds it
+well in a kitchen if you're not chopping bones.
+```
+
+Fields:
+
+| field          | type   | required | notes                                    |
+|----------------|--------|----------|------------------------------------------|
+| `id`           | string | yes      | slug, file name without `.md`            |
+| `name`         | string | yes      | canonical display spelling               |
+| `composition`  | string | no       | free-form alloy formula                  |
+| `notes`        | string | no       | the markdown body — care, behaviour, etc |
+| `createdAt`    | ISO    | yes      |                                          |
+| `updatedAt`    | ISO    | yes      |                                          |
+
+`Knife.steel` is a **soft** reference: the string should match a
+`Steel.id` (i.e. `slugify(Knife.steel) === Steel.id`), but the API
+does NOT reject an unknown string when creating or updating a knife.
+This lets you record a knife before you've researched its steel; the
+steel record can be created later and the existing knives will pick
+it up automatically.
+
+Slug canonicalisation: steel names are weird (`80CrV2`, `80Crv2`,
+`AUS-8`, `AUS8`). Display uses the spelling from `Knife.steel` or
+`Steel.name`; grouping and routing use `slugify()` against the steel
+string. Two knives whose `steel` strings slugify to the same value
+are considered the same steel.
+
 ## Referential integrity
 
 - Creating a knife requires the `ownerId` to exist; the API rejects otherwise.
 - Deleting an owner that still has knives returns `409`. Reassign or delete the
   knives first.
+- Deleting a steel that any knife references returns `409`. Change or
+  clear the knife's `steel` field first.
 
 ## Editing by hand
 

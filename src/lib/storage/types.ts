@@ -78,6 +78,25 @@ export const OwnerInputSchema = OwnerSchema.omit({
 });
 export type OwnerInput = z.infer<typeof OwnerInputSchema>;
 
+export const SteelSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  composition: z.string().optional().default(""),
+  notes: z.string().optional().default(""),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type Steel = z.infer<typeof SteelSchema>;
+
+export const SteelInputSchema = SteelSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  id: z.string().optional(),
+});
+export type SteelInput = z.infer<typeof SteelInputSchema>;
+
 export interface KnifeImageBlob {
   bytes: Buffer;
   contentType: ImageMimeType;
@@ -108,4 +127,9 @@ export interface Storage {
   getOwner(id: string): Promise<Owner | null>;
   saveOwner(owner: Owner): Promise<void>;
   deleteOwner(id: string): Promise<boolean>;
+
+  listSteels(): Promise<Steel[]>;
+  getSteel(id: string): Promise<Steel | null>;
+  saveSteel(steel: Steel): Promise<void>;
+  deleteSteel(id: string): Promise<boolean>;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Factory, PocketKnife, Tags, User } from "lucide-react";
+import { ArrowLeft, Atom, Factory, PocketKnife, Tags, User } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -129,7 +129,17 @@ export default function KnifeDetailPage() {
               </Link>
             ) : null}
           </PropertyRow>
-          <PropertyRow label="Steel">{knife.steel}</PropertyRow>
+          <PropertyRow label="Steel">
+            {knife.steel ? (
+              <Link
+                href={`/steels/${slugify(knife.steel)}`}
+                className="inline-flex items-center gap-1.5 hover:underline"
+              >
+                <Atom className="h-3.5 w-3.5" />
+                {knife.steel}
+              </Link>
+            ) : null}
+          </PropertyRow>
           {last && (
             <PropertyRow label="Last sharpened">
               <span className="font-mono">{formatDate(last.date)}</span>
