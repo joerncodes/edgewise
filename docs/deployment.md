@@ -6,7 +6,19 @@ The app is designed to run in a single container on your homelab Portainer.
 
 Multi-stage build, Next.js `output: "standalone"`, runs as a non-root user.
 
-Build locally:
+Published to GitHub Container Registry on every push to `main` and on
+version tags by `.github/workflows/docker.yml`:
+
+- `ghcr.io/joerncodes/edgewise:latest` — head of `main`
+- `ghcr.io/joerncodes/edgewise:v0.1.0` — a release tag (also `:0.1`)
+- `ghcr.io/joerncodes/edgewise:sha-<short>` — a specific commit
+
+The GHCR package starts out **private**. After the first successful run of
+the workflow, go to <https://github.com/joerncodes/edgewise/pkgs/container/edgewise>
+→ Package settings → "Change visibility" → Public, so Portainer can pull
+without registry credentials.
+
+Build locally as a fallback:
 
 ```bash
 docker build -t edgewise:local .
@@ -42,8 +54,16 @@ docker run -d --name edgewise \
 
 ## Portainer stack
 
-Use the bundled `docker-compose.yml` as a stack. Set these in the stack's
-environment block (Portainer "Environment variables" section):
+Deploy as a stack — either of:
+
+1. **From Git repository**: point Portainer at
+   `https://github.com/joerncodes/edgewise`, compose path `docker-compose.yml`,
+   reference `refs/heads/main`. Portainer pulls the image referenced in the
+   compose; no checkout is required at deploy time.
+2. **Web editor / upload**: paste `docker-compose.yml` from the repo.
+
+Set these in the stack's environment block (Portainer "Environment
+variables" section):
 
 ```
 APP_PASSWORD=…
@@ -52,7 +72,7 @@ AUTH_SECRET=…
 NEXTAUTH_URL=https://edgewise.your.domain
 EDGEWISE_PORT=3000
 EDGEWISE_DATA=/srv/edgewise/data
-EDGEWISE_IMAGE=ghcr.io/yourname/edgewise:latest   # or build locally
+EDGEWISE_IMAGE=ghcr.io/joerncodes/edgewise:latest   # or pin :v0.1.0
 ```
 
 Notes:

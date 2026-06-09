@@ -1,6 +1,6 @@
 services:
   edgewise:
-    image: ${EDGEWISE_IMAGE:-ghcr.io/yourname/edgewise:latest}
+    image: ${EDGEWISE_IMAGE:-ghcr.io/joerncodes/edgewise:latest}
     build: .
     container_name: edgewise
     restart: unless-stopped
