@@ -18,7 +18,7 @@ pnpm dev          # local dev server (Turbopack)
 pnpm build        # production build
 pnpm start        # serve the built app
 pnpm lint         # eslint
-docker build -t knoives:local .
+docker build -t edgewise:local .
 ```
 
 There is no test suite. If a change is risky enough to need one, propose it

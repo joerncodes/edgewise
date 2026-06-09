@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Knoives",
+  title: "Edgewise",
   description: "Track knives sharpened for friends and coworkers.",
 };
 
@@ -36,7 +36,7 @@ export default function RootLayout({
           <header className="border-b">
             <div className="mx-auto max-w-5xl flex items-center gap-6 px-4 py-3">
               <Link href="/" className="font-semibold">
-                Knoives
+                Edgewise
               </Link>
               <nav className="flex items-center gap-4 text-sm text-muted-foreground">
                 <Link href="/knives" className="hover:text-foreground">

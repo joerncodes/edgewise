@@ -19,7 +19,7 @@ inspection, and the occasional manual edit must be easy.
   `VOLUME`, and is **bind-mounted** to a host path in the compose file.
 - `docker-compose.yml` is shaped for a Portainer stack: secrets via
   environment variables, image either built locally or pulled from a
-  registry (`KNOIVES_IMAGE`).
+  registry (`EDGEWISE_IMAGE`).
 - The container does not terminate TLS or expose `/healthz`. A reverse
   proxy in front handles TLS and (if needed) health probing.
 

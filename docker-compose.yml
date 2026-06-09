@@ -1,11 +1,11 @@
 services:
-  knoives:
-    image: ${KNOIVES_IMAGE:-ghcr.io/yourname/knoives:latest}
+  edgewise:
+    image: ${EDGEWISE_IMAGE:-ghcr.io/yourname/edgewise:latest}
     build: .
-    container_name: knoives
+    container_name: edgewise
     restart: unless-stopped
     ports:
-      - "${KNOIVES_PORT:-3000}:3000"
+      - "${EDGEWISE_PORT:-3000}:3000"
     environment:
       DATA_DIR: /data
       APP_PASSWORD: ${APP_PASSWORD:?set APP_PASSWORD in .env or Portainer stack env}
@@ -14,4 +14,4 @@ services:
       AUTH_TRUST_HOST: "true"
       NEXTAUTH_URL: ${NEXTAUTH_URL:-}
     volumes:
-      - ${KNOIVES_DATA:-./data}:/data
+      - ${EDGEWISE_DATA:-./data}:/data

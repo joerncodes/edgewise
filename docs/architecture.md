@@ -1,6 +1,6 @@
 # Architecture
 
-Knoives is a single-user Next.js app for tracking knives sharpened for friends
+Edgewise is a single-user Next.js app for tracking knives sharpened for friends
 and coworkers. It is intentionally small.
 
 ## Layers

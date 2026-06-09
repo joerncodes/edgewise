@@ -28,7 +28,7 @@ function LoginForm() {
     <div className="mx-auto mt-16 max-w-sm">
       <Card>
         <CardHeader>
-          <CardTitle>Knoives</CardTitle>
+          <CardTitle>Edgewise</CardTitle>
           <CardDescription>Enter the app password to continue.</CardDescription>
         </CardHeader>
         <CardContent>

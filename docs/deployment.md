@@ -9,7 +9,7 @@ Multi-stage build, Next.js `output: "standalone"`, runs as a non-root user.
 Build locally:
 
 ```bash
-docker build -t knoives:local .
+docker build -t edgewise:local .
 ```
 
 ## Running
@@ -31,13 +31,13 @@ And one volume:
 Quick run:
 
 ```bash
-docker run -d --name knoives \
+docker run -d --name edgewise \
   -p 3000:3000 \
   -e APP_PASSWORD=$(openssl rand -hex 16) \
   -e API_TOKEN=$(openssl rand -hex 24) \
   -e AUTH_SECRET=$(openssl rand -base64 32) \
-  -v /srv/knoives/data:/data \
-  knoives:local
+  -v /srv/edgewise/data:/data \
+  edgewise:local
 ```
 
 ## Portainer stack
@@ -49,10 +49,10 @@ environment block (Portainer "Environment variables" section):
 APP_PASSWORD=…
 API_TOKEN=…
 AUTH_SECRET=…
-NEXTAUTH_URL=https://knoives.your.domain
-KNOIVES_PORT=3000
-KNOIVES_DATA=/srv/knoives/data
-KNOIVES_IMAGE=ghcr.io/yourname/knoives:latest   # or build locally
+NEXTAUTH_URL=https://edgewise.your.domain
+EDGEWISE_PORT=3000
+EDGEWISE_DATA=/srv/edgewise/data
+EDGEWISE_IMAGE=ghcr.io/yourname/edgewise:latest   # or build locally
 ```
 
 Notes:
@@ -74,5 +74,5 @@ Back up the `/data` host directory. The files are plain markdown; `tar`,
 
 ## Logs
 
-`docker logs knoives`. Errors from API handlers go through `console.error`
+`docker logs edgewise`. Errors from API handlers go through `console.error`
 in `src/lib/http.ts` (`serverError`). No structured logging yet.
