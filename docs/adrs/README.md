@@ -19,4 +19,5 @@ a pointer to the replacement, rather than being edited in place.
 | 0007 | [Per-session angle](0007-per-session-angle.md)                | accepted |
 | 0008 | [Portainer + /data bind mount](0008-portainer-bind-mount.md)  | accepted |
 | 0009 | [Self-describing API endpoint for LLMs](0009-self-describing-api-endpoint.md) | accepted |
-| 0010 | [Thumbnails backfilled, no create-on-miss](0010-thumbnails-backfilled-no-create-on-miss.md) | accepted |
+| 0010 | [Thumbnails backfilled, no create-on-miss](0010-thumbnails-backfilled-no-create-on-miss.md) | superseded by 0011 |
+| 0011 | [Thumbnails generated on first read](0011-thumbnails-create-on-miss.md) | accepted |

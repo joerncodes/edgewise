@@ -2,9 +2,16 @@
 filetype: adr
 id: "0010"
 title: Thumbnails are backfilled, never generated on a missed read
-status: accepted
+status: superseded
+supersededBy: "0011"
 date: 2026-06-09
 ---
+
+> **Superseded by [ADR-0011](0011-thumbnails-create-on-miss.md).** The
+> operational ergonomics of "remember to run the backfill on every
+> deploy" turned out worse than the cost of generating on first read.
+> See ADR-0011 for the replacement.
+
 
 # Context
 

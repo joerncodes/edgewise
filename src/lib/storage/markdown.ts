@@ -205,21 +205,40 @@ export class MarkdownStorage implements Storage {
     filename: string,
     size: ImageSize = "original",
   ): Promise<KnifeImageBlob | null> {
-    if (size === "thumb") {
-      try {
-        const bytes = await fs.readFile(
-          this.knifeImagePath(knifeId, thumbFilename(filename)),
-        );
-        return { bytes, contentType: THUMB_MIME };
-      } catch (err) {
-        if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
-        // Fall through and serve the original — covers images uploaded
-        // before the thumb feature shipped and any cases where the
-        // generation step failed.
-      }
-    }
     const mime = mimeFromFilename(filename);
     if (!mime) return null;
+
+    if (size === "thumb") {
+      const thumbPath = this.knifeImagePath(knifeId, thumbFilename(filename));
+      try {
+        const cached = await fs.readFile(thumbPath);
+        return { bytes: cached, contentType: THUMB_MIME };
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+      }
+      // Cache miss: generate from the original and write it through.
+      // See ADR-0011.
+      const originalPath = this.knifeImagePath(knifeId, filename);
+      let originalBytes: Buffer;
+      try {
+        originalBytes = await fs.readFile(originalPath);
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code === "ENOENT") return null;
+        throw err;
+      }
+      try {
+        const generated = await makeThumbnail(originalBytes);
+        await fs.writeFile(thumbPath, generated);
+        return { bytes: generated, contentType: THUMB_MIME };
+      } catch (err) {
+        console.warn(
+          `thumb generation failed for ${knifeId}/${filename}; serving original:`,
+          (err as Error).message,
+        );
+        return { bytes: originalBytes, contentType: mime };
+      }
+    }
+
     try {
       const bytes = await fs.readFile(this.knifeImagePath(knifeId, filename));
       return { bytes, contentType: mime };
