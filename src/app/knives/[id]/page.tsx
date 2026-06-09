@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { KnifeImage } from "@/components/knife-image";
+import { Markdown } from "@/components/markdown";
 import { PropertyList, PropertyRow } from "@/components/property-row";
 import { Stars } from "@/components/stars";
 import { api } from "@/lib/api-client";
@@ -198,7 +199,7 @@ export default function KnifeDetailPage() {
       {knife.notes && (
         <section className="space-y-3">
           <SectionLabel>Notes</SectionLabel>
-          <p className="whitespace-pre-wrap text-sm leading-relaxed">{knife.notes}</p>
+          <Markdown>{knife.notes}</Markdown>
         </section>
       )}
     </div>
