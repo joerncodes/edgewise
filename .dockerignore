@@ -1,0 +1,16 @@
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+**/.git
+**/.env
+**/.env.*
+!.env.example
+**/Dockerfile
+**/docker-compose*.yml
+**/.DS_Store
+**/coverage
+**/.vscode
+**/.idea
+data
+docs

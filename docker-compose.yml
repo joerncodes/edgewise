@@ -1,0 +1,17 @@
+services:
+  knoives:
+    image: ${KNOIVES_IMAGE:-ghcr.io/yourname/knoives:latest}
+    build: .
+    container_name: knoives
+    restart: unless-stopped
+    ports:
+      - "${KNOIVES_PORT:-3000}:3000"
+    environment:
+      DATA_DIR: /data
+      APP_PASSWORD: ${APP_PASSWORD:?set APP_PASSWORD in .env or Portainer stack env}
+      API_TOKEN: ${API_TOKEN:?set API_TOKEN in .env or Portainer stack env}
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET (openssl rand -base64 32)}
+      AUTH_TRUST_HOST: "true"
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-}
+    volumes:
+      - ${KNOIVES_DATA:-./data}:/data

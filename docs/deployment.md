@@ -1,0 +1,78 @@
+# Deployment
+
+The app is designed to run in a single container on your homelab Portainer.
+
+## Image
+
+Multi-stage build, Next.js `output: "standalone"`, runs as a non-root user.
+
+Build locally:
+
+```bash
+docker build -t knoives:local .
+```
+
+## Running
+
+The container needs three secrets:
+
+| env             | what                                              |
+|-----------------|---------------------------------------------------|
+| `APP_PASSWORD`  | The password the UI login form checks against.    |
+| `API_TOKEN`     | Bearer token for the API (Claude, scripts, curl). |
+| `AUTH_SECRET`   | Auth.js JWT signing secret. `openssl rand -base64 32`. |
+
+And one volume:
+
+| path     | what                                              |
+|----------|---------------------------------------------------|
+| `/data`  | Markdown files. Bind-mount somewhere safe.        |
+
+Quick run:
+
+```bash
+docker run -d --name knoives \
+  -p 3000:3000 \
+  -e APP_PASSWORD=$(openssl rand -hex 16) \
+  -e API_TOKEN=$(openssl rand -hex 24) \
+  -e AUTH_SECRET=$(openssl rand -base64 32) \
+  -v /srv/knoives/data:/data \
+  knoives:local
+```
+
+## Portainer stack
+
+Use the bundled `docker-compose.yml` as a stack. Set these in the stack's
+environment block (Portainer "Environment variables" section):
+
+```
+APP_PASSWORD=…
+API_TOKEN=…
+AUTH_SECRET=…
+NEXTAUTH_URL=https://knoives.your.domain
+KNOIVES_PORT=3000
+KNOIVES_DATA=/srv/knoives/data
+KNOIVES_IMAGE=ghcr.io/yourname/knoives:latest   # or build locally
+```
+
+Notes:
+- `NEXTAUTH_URL` should be the public URL when behind a reverse proxy. The
+  app sets `AUTH_TRUST_HOST=true` so it accepts the proxied host header.
+- `/data` is declared as a `VOLUME` so Docker won't lose it on container
+  recreation, but you should bind-mount it to a host path for backups.
+
+## Reverse proxy
+
+Behind Traefik/Caddy/nginx, terminate TLS there and forward `X-Forwarded-*`.
+The app does not handle TLS itself. There is no `/healthz` endpoint — use
+`GET /api/owners` with the token as a health probe if you need one.
+
+## Backups
+
+Back up the `/data` host directory. The files are plain markdown; `tar`,
+`restic`, `borg`, or a daily `cp` to another disk all work.
+
+## Logs
+
+`docker logs knoives`. Errors from API handlers go through `console.error`
+in `src/lib/http.ts` (`serverError`). No structured logging yet.
