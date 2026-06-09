@@ -1,8 +1,9 @@
-import { Atom, BarChart3, Factory, PocketKnife, Tags, User } from "lucide-react";
+import { BarChart3, NotebookPen, PocketKnife } from "lucide-react";
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans, Oswald } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import Link from "next/link";
+import { LibraryMenu } from "@/components/library-menu";
 import { NavLink } from "@/components/nav-link";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -57,25 +58,14 @@ export default function RootLayout({
                   Edgewise
                 </Link>
                 <nav className="flex items-center gap-5">
-                  <NavLink href="/owners">
-                    <User className="h-4 w-4" />
-                    Owners
-                  </NavLink>
-                  <NavLink href="/manufacturers">
-                    <Factory className="h-4 w-4" />
-                    Manufacturers
-                  </NavLink>
-                  <NavLink href="/types">
-                    <Tags className="h-4 w-4" />
-                    Types
-                  </NavLink>
-                  <NavLink href="/steels">
-                    <Atom className="h-4 w-4" />
-                    Steels
-                  </NavLink>
+                  <LibraryMenu />
                   <NavLink href="/stats">
                     <BarChart3 className="h-4 w-4" />
                     Stats
+                  </NavLink>
+                  <NavLink href="/diary">
+                    <NotebookPen className="h-4 w-4" />
+                    Diary
                   </NavLink>
                 </nav>
                 <div className="ml-auto flex items-center gap-1">

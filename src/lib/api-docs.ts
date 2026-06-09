@@ -55,6 +55,7 @@ const ENDPOINTS = `\
 | PATCH  | \`/api/steels/{id}\`                    | partial \`SteelInput\` | \`{ steel }\`          |
 | DELETE | \`/api/steels/{id}\`                    | —                  | 204 (409 if in use)      |
 | GET    | \`/api/stats\`                          | —                  | aggregate stats (see below) |
+| GET    | \`/api/diary\`                          | —                  | chronological session log (see below) |
 | GET    | \`/api/docs\`                           | —                  | this document (markdown) |
 | GET    | \`/llms.txt\`                           | —                  | this document, unauth    |`;
 
@@ -98,6 +99,36 @@ curl -s -X POST $BASE/api/steels \\
 
 # Aggregate stats — sessions/month, per-owner counts, angle histogram, etc.
 curl -s $BASE/api/stats -H "Authorization: Bearer $TOKEN" | jq
+
+# Diary — every session ever, denormalized and grouped by month
+curl -s $BASE/api/diary -H "Authorization: Bearer $TOKEN" | jq
+\`\`\`
+
+## Diary
+
+\`GET /api/diary\` returns every sharpening session ever recorded,
+denormalized and grouped by month. Same data is rendered at the
+\`/diary\` page in the UI. Shape:
+
+\`\`\`ts
+type Diary = {
+  totalSessions: number;
+  months: {
+    month: string; // YYYY-MM, newest first
+    entries: {
+      date: string; // YYYY-MM-DD
+      knifeId: string;
+      knifeName: string;
+      ownerId: string;
+      ownerName: string;
+      angle: number;
+      rating?: number;
+      notes: string;
+      coverFilename?: string;
+    }[];
+  }[];
+  generatedAt: string;
+};
 \`\`\`
 
 ## Steels

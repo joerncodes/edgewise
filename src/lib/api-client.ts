@@ -1,3 +1,4 @@
+import type { Diary } from "./diary";
 import type { Stats } from "./stats";
 import type { Knife, Owner, SharpeningSession, Steel } from "./storage/types";
 
@@ -72,4 +73,5 @@ export const api = {
   deleteSteel: (id: string) => request<void>(`/api/steels/${id}`, { method: "DELETE" }),
 
   getStats: () => request<Stats>("/api/stats"),
+  getDiary: () => request<Diary>("/api/diary"),
 };

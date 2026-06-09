@@ -69,6 +69,16 @@ record exists, but the API does not reject unknown strings. Steel
 records can carry persistent markdown notes (rust care, sharpening
 behaviour, etc.) that live independently of any knife.
 
+### Diary
+
+| Method | Path          | Body | Returns                                |
+|--------|---------------|------|----------------------------------------|
+| GET    | `/api/diary`  | —    | denormalized session log grouped by month |
+
+Every session across every knife, in one chronological stream. Shape
+lives in `src/lib/diary.ts` (`Diary` interface). The matching UI is
+`/diary`.
+
 ### Stats
 
 | Method | Path          | Body | Returns                            |
