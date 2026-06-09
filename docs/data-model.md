@@ -89,6 +89,38 @@ Fields:
 | `angle`  | number | yes      | degrees per side, 1–45             |
 | `notes`  | string | no       | what was done that day             |
 
+### Image
+
+A knife can carry 0..n images. The frontmatter holds the metadata; bytes
+live under `$DATA_DIR/knives/<id>/images/<filename>` and are served via
+`GET /api/knives/<id>/images/<filename>`.
+
+| field      | type   | required | notes                                  |
+|------------|--------|----------|----------------------------------------|
+| `filename` | string | yes      | sanitized name on disk, includes ext   |
+| `caption`  | string | no       | optional                               |
+| `addedAt`  | ISO    | yes      | server-set on upload                   |
+
+Order in the array matters: the first entry is the "cover".
+
+Supported MIME types: `image/jpeg`, `image/png`, `image/webp`. Max upload
+size: 10 MB.
+
+### On-disk layout with images
+
+```
+$DATA_DIR/
+  knives/
+    guido-kleines-santoku.md
+    guido-kleines-santoku/
+      images/
+        guido-kleines-santoku.png
+  owners/
+    guido-goebbels.md
+```
+
+Deleting a knife removes the per-knife directory too.
+
 `angle` is per-session: a knife can be re-profiled over time.
 
 ## Referential integrity

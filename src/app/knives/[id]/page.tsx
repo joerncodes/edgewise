@@ -76,6 +76,33 @@ export default function KnifeDetailPage() {
         </CardContent>
       </Card>
 
+      {knife.images.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Images ({knife.images.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {knife.images.map((img) => (
+                <figure key={img.filename} className="space-y-1">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={api.imageUrl(knife.id, img.filename)}
+                    alt={img.caption || knife.name}
+                    className="w-full rounded-md border object-cover"
+                  />
+                  {img.caption && (
+                    <figcaption className="text-xs text-muted-foreground">
+                      {img.caption}
+                    </figcaption>
+                  )}
+                </figure>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Sharpening sessions ({knife.sessions.length})</CardTitle>

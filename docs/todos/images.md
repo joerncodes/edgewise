@@ -1,4 +1,15 @@
+---
+filetype: todo
+status: done
+completedOn: 2026-06-09
+---
+
 # Knife images
+
+> **Done.** Implemented 2026-06-09. Schema, storage methods, upload/serve/delete
+> endpoints, and the UI grid all shipped. See `docs/data-model.md` (Image
+> section) and `docs/api.md` for the resulting contract. Decisions made during
+> implementation are noted under each "Open question" below.
 
 Knives should support **0..n images** per knife.
 
@@ -8,30 +19,26 @@ Knives should support **0..n images** per knife.
 - Photos visible on the knife detail page in the UI.
 - Uploadable via the API so Claude / a phone shortcut can post them.
 
-## Open questions
+## Open questions (resolved)
 
-- **Storage location.** Two options:
-  - `\$DATA_DIR/knives/<id>/images/<filename>` — keeps everything next to the
-    markdown file, easy to back up as one tree. Probably this.
-  - A flat `\$DATA_DIR/images/` bucket referenced by hash. Decouples photo
-    storage from knife id; survives renames cleanly. More complexity.
-- **Frontmatter reference.** Add `images: [{ filename, caption?, addedAt }]`
-  to the knife frontmatter. Order matters; first one is the "cover".
-- **Are images per-knife or per-session?** Default to per-knife. Per-session
-  is a v2 step (would just be `images` on the `Session` object).
-- **Limits / formats.** JPEG/PNG/WebP, max ~10 MB each, no transcoding on
-  upload for now. The reverse proxy or a future Next.js Image setup can
-  handle resizing.
-- **Serving.** New `GET /api/knives/<id>/images/<filename>` route, or a
-  static mount? An API route keeps auth uniform — probably worth it.
+- **Storage location.** ✅ Chose `$DATA_DIR/knives/<id>/images/<filename>` —
+  everything per-knife is colocated, easy to back up as one tree.
+- **Frontmatter reference.** ✅ `images: [{ filename, caption, addedAt }]` on
+  the knife. Order matters; first one is the "cover".
+- **Per-knife or per-session?** ✅ Per-knife. Per-session can come later as
+  `images` on the `Session` object.
+- **Limits / formats.** ✅ JPEG/PNG/WebP, max 10 MB. No transcoding.
+- **Serving.** ✅ `GET /api/knives/<id>/images/<filename>` — same auth as
+  the rest of the API.
 
-## Sketch of the API
+## API as shipped
 
-- `POST /api/knives/<id>/images` — multipart upload, returns the updated
-  knife with the new image entry.
-- `DELETE /api/knives/<id>/images/<filename>` — remove file + frontmatter
+- `POST   /api/knives/<id>/images` — multipart upload (`file`, optional
+  `caption`). Returns the updated knife.
+- `DELETE /api/knives/<id>/images/<filename>` — removes file + frontmatter
   entry.
-- `GET  /api/knives/<id>/images/<filename>` — stream the bytes, auth-gated.
+- `GET    /api/knives/<id>/images/<filename>` — streams the bytes,
+  auth-gated.
 
 ## Schema impact
 

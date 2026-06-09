@@ -7,6 +7,33 @@ export const SharpeningSessionSchema = z.object({
 });
 export type SharpeningSession = z.infer<typeof SharpeningSessionSchema>;
 
+export const KnifeImageSchema = z.object({
+  filename: z.string().min(1),
+  caption: z.string().optional().default(""),
+  addedAt: z.string(),
+});
+export type KnifeImage = z.infer<typeof KnifeImageSchema>;
+
+export const IMAGE_MIME_TYPES = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+} as const;
+export type ImageMimeType = keyof typeof IMAGE_MIME_TYPES;
+export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+
+const EXT_TO_MIME: Record<string, ImageMimeType> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+};
+
+export function mimeFromFilename(filename: string): ImageMimeType | null {
+  const ext = filename.toLowerCase().split(".").pop() ?? "";
+  return EXT_TO_MIME[ext] ?? null;
+}
+
 export const KnifeSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -16,6 +43,7 @@ export const KnifeSchema = z.object({
   type: z.string().optional().default(""),
   notes: z.string().optional().default(""),
   sessions: z.array(SharpeningSessionSchema).default([]),
+  images: z.array(KnifeImageSchema).default([]),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -49,11 +77,25 @@ export const OwnerInputSchema = OwnerSchema.omit({
 });
 export type OwnerInput = z.infer<typeof OwnerInputSchema>;
 
+export interface KnifeImageBlob {
+  bytes: Buffer;
+  contentType: ImageMimeType;
+}
+
 export interface Storage {
   listKnives(): Promise<Knife[]>;
   getKnife(id: string): Promise<Knife | null>;
   saveKnife(knife: Knife): Promise<void>;
   deleteKnife(id: string): Promise<boolean>;
+
+  saveKnifeImage(
+    knifeId: string,
+    filename: string,
+    contentType: ImageMimeType,
+    bytes: Buffer,
+  ): Promise<void>;
+  readKnifeImage(knifeId: string, filename: string): Promise<KnifeImageBlob | null>;
+  deleteKnifeImage(knifeId: string, filename: string): Promise<boolean>;
 
   listOwners(): Promise<Owner[]>;
   getOwner(id: string): Promise<Owner | null>;

@@ -33,6 +33,7 @@ export async function POST(req: Request) {
       type: input.type ?? "",
       notes: input.notes ?? "",
       sessions: input.sessions ?? [],
+      images: [],
       createdAt: now,
       updatedAt: now,
     };

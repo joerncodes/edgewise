@@ -40,6 +40,9 @@ with status `401`.
 | PATCH  | `/api/knives/{id}`            | partial `KnifeInput`| `{ knife }`              |
 | DELETE | `/api/knives/{id}`            | —                   | 204                      |
 | POST   | `/api/knives/{id}/sessions`   | `Session`           | `{ knife }` (201)        |
+| POST   | `/api/knives/{id}/images`     | multipart           | `{ knife }` (201)        |
+| GET    | `/api/knives/{id}/images/{filename}` | —            | image bytes              |
+| DELETE | `/api/knives/{id}/images/{filename}` | —            | `{ knife }`              |
 
 ### Owners
 
@@ -107,4 +110,10 @@ curl -s -X POST $BASE/api/knives/wusthof-chef-8/sessions \
 
 # List
 curl -s $BASE/api/knives -H "Authorization: Bearer $TOKEN" | jq
+
+# Upload an image (multipart)
+curl -s -X POST $BASE/api/knives/guido-kleines-santoku/images \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@./guido-kleines-santoku.png;type=image/png" \
+  -F "caption=Santoku, after re-grinding the chip"
 ```

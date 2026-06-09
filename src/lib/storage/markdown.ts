@@ -5,10 +5,29 @@ import YAML from "yaml";
 import {
   KnifeSchema,
   OwnerSchema,
+  mimeFromFilename,
+  type ImageMimeType,
   type Knife,
+  type KnifeImageBlob,
   type Owner,
   type Storage,
 } from "./types";
+
+function normalizeDates<T>(value: T): T {
+  if (value instanceof Date) {
+    const iso = value.toISOString();
+    return (/^\d{4}-\d{2}-\d{2}T00:00:00\.000Z$/.test(iso)
+      ? iso.slice(0, 10)
+      : iso) as unknown as T;
+  }
+  if (Array.isArray(value)) return value.map(normalizeDates) as unknown as T;
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, normalizeDates(v)]),
+    ) as T;
+  }
+  return value;
+}
 
 export interface MarkdownStorageOptions {
   dataDir: string;
@@ -38,6 +57,18 @@ export class MarkdownStorage implements Storage {
     return path.join(this.ownersDir, `${id}.md`);
   }
 
+  private knifeImagesDir(id: string) {
+    return path.join(this.knivesDir, id, "images");
+  }
+
+  private knifeImagePath(id: string, filename: string) {
+    const safe = path.basename(filename);
+    if (safe !== filename || safe.includes("..") || safe.startsWith(".")) {
+      throw new Error(`invalid image filename: ${filename}`);
+    }
+    return path.join(this.knifeImagesDir(id), safe);
+  }
+
   private async readFileOrNull(p: string): Promise<string | null> {
     try {
       return await fs.readFile(p, "utf8");
@@ -49,10 +80,10 @@ export class MarkdownStorage implements Storage {
 
   private parseKnife(raw: string): Knife {
     const parsed = matter(raw);
-    const data = {
+    const data = normalizeDates({
       ...parsed.data,
       notes: parsed.content.trim(),
-    };
+    });
     return KnifeSchema.parse(data);
   }
 
@@ -64,10 +95,10 @@ export class MarkdownStorage implements Storage {
 
   private parseOwner(raw: string): Owner {
     const parsed = matter(raw);
-    const data = {
+    const data = normalizeDates({
       ...parsed.data,
       notes: parsed.content.trim(),
-    };
+    });
     return OwnerSchema.parse(data);
   }
 
@@ -103,8 +134,43 @@ export class MarkdownStorage implements Storage {
   }
 
   async deleteKnife(id: string): Promise<boolean> {
+    let removedMd = false;
     try {
       await fs.unlink(this.knifePath(id));
+      removedMd = true;
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    }
+    await fs.rm(path.join(this.knivesDir, id), { recursive: true, force: true });
+    return removedMd;
+  }
+
+  async saveKnifeImage(
+    knifeId: string,
+    filename: string,
+    _contentType: ImageMimeType,
+    bytes: Buffer,
+  ): Promise<void> {
+    const target = this.knifeImagePath(knifeId, filename);
+    await fs.mkdir(path.dirname(target), { recursive: true });
+    await fs.writeFile(target, bytes);
+  }
+
+  async readKnifeImage(knifeId: string, filename: string): Promise<KnifeImageBlob | null> {
+    const mime = mimeFromFilename(filename);
+    if (!mime) return null;
+    try {
+      const bytes = await fs.readFile(this.knifeImagePath(knifeId, filename));
+      return { bytes, contentType: mime };
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === "ENOENT") return null;
+      throw err;
+    }
+  }
+
+  async deleteKnifeImage(knifeId: string, filename: string): Promise<boolean> {
+    try {
+      await fs.unlink(this.knifeImagePath(knifeId, filename));
       return true;
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code === "ENOENT") return false;
