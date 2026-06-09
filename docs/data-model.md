@@ -82,9 +82,16 @@ Fields:
 | `steel`        | string    | no       |                                    |
 | `type`         | string    | no       | chef, paring, santoku, pocket…     |
 | `notes`        | string    | no       | the markdown body                  |
+| `backlog`      | boolean   | no       | true while waiting to be sharpened |
 | `sessions`     | Session[] | no       | per-sharpening events, oldest→new  |
 | `createdAt`    | ISO       | yes      |                                    |
 | `updatedAt`    | ISO       | yes      |                                    |
+
+`backlog` is a manual flag: set it to `true` via `PATCH /api/knives/{id}`
+when the knife is dropped off, and the `/backlog` page will surface it.
+Adding a session via `POST /api/knives/{id}/sessions` clears the flag
+automatically — sharpening obviously means it's no longer waiting. Absent
+or `false` means "not in the backlog".
 
 ### Session
 

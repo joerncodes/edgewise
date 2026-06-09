@@ -32,6 +32,7 @@ export async function POST(req: Request) {
       steel: input.steel ?? "",
       type: input.type ?? "",
       notes: input.notes ?? "",
+      backlog: input.backlog ?? false,
       sessions: input.sessions ?? [],
       images: [],
       createdAt: now,

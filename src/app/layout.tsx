@@ -1,4 +1,4 @@
-import { BarChart3, NotebookPen, PocketKnife } from "lucide-react";
+import { BarChart3, Inbox, NotebookPen, PocketKnife } from "lucide-react";
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans, Oswald } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
@@ -59,6 +59,10 @@ export default function RootLayout({
                 </Link>
                 <nav className="flex items-center gap-5">
                   <LibraryMenu />
+                  <NavLink href="/backlog">
+                    <Inbox className="h-4 w-4" />
+                    Backlog
+                  </NavLink>
                   <NavLink href="/stats">
                     <BarChart3 className="h-4 w-4" />
                     Stats

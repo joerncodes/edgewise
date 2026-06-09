@@ -43,6 +43,7 @@ export const KnifeSchema = z.object({
   steel: z.string().optional().default(""),
   type: z.string().optional().default(""),
   notes: z.string().optional().default(""),
+  backlog: z.boolean().optional().default(false),
   sessions: z.array(SharpeningSessionSchema).default([]),
   images: z.array(KnifeImageSchema).default([]),
   createdAt: z.string(),

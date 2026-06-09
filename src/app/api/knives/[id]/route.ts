@@ -43,6 +43,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
       steel: merged.steel ?? "",
       type: merged.type ?? "",
       notes: merged.notes ?? "",
+      backlog: merged.backlog ?? false,
       sessions: merged.sessions ?? [],
       updatedAt: nowIso(),
     };

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Atom, Factory, PocketKnife, Tags, User } from "lucide-react";
+import { ArrowLeft, Atom, Factory, Inbox, PocketKnife, Tags, User } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -72,9 +72,18 @@ export default function KnifeDetailPage() {
           <PocketKnife className="h-3 w-3" />
           All knives
         </Link>
-        <h1 className="flex items-center gap-3 text-4xl font-semibold tracking-tight text-brass">
+        <h1 className="flex flex-wrap items-center gap-3 text-4xl font-semibold tracking-tight text-brass">
           <PocketKnife className="h-8 w-8" />
           {knife.name}
+          {knife.backlog && (
+            <Link
+              href="/backlog"
+              className="inline-flex items-center gap-1 rounded-md border border-brass/40 bg-brass/10 px-2 py-0.5 text-xs uppercase tracking-wider text-brass hover:bg-brass/20"
+            >
+              <Inbox className="h-3 w-3" />
+              In backlog
+            </Link>
+          )}
         </h1>
         <p className="text-sm text-muted-foreground">
           {owner ? (

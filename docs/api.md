@@ -126,6 +126,7 @@ KnifeInput = {
   steel?: string
   type?: string
   notes?: string
+  backlog?: boolean   // true while waiting on the bench; auto-cleared on next session
   sessions?: Session[]
 }
 
@@ -169,11 +170,17 @@ curl -s -X POST $BASE/api/knives \
   -H 'Content-Type: application/json' \
   -d '{"name":"Wüsthof Chef 8","ownerId":"jane-doe","steel":"X50CrMoV15","type":"chef"}'
 
-# Record a sharpening
+# Record a sharpening (also auto-clears `backlog` if it was set)
 curl -s -X POST $BASE/api/knives/wusthof-chef-8/sessions \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"date":"2026-06-09","angle":18,"notes":"Touch-up on 4000"}'
+
+# Flag a knife as waiting on the bench (appears on /backlog)
+curl -s -X PATCH $BASE/api/knives/wusthof-chef-8 \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"backlog":true}'
 
 # List
 curl -s $BASE/api/knives -H "Authorization: Bearer $TOKEN" | jq

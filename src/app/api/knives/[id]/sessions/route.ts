@@ -17,6 +17,9 @@ export async function POST(req: Request, { params }: Ctx) {
 
     const updated = {
       ...knife,
+      // Sharpening obviously falsifies "waiting to be sharpened" —
+      // clear the backlog flag on first session. See docs/todos/backlog.md.
+      backlog: false,
       sessions: [...knife.sessions, session].sort((a, b) => a.date.localeCompare(b.date)),
       updatedAt: nowIso(),
     };

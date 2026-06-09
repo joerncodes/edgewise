@@ -1,6 +1,7 @@
 "use client";
 
-import { PocketKnife, Sparkles, User } from "lucide-react";
+import { ChevronRight, Inbox, PocketKnife, Sparkles, User } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { KnifeCard, lastSession } from "@/components/knife-card";
@@ -13,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { api } from "@/lib/api-client";
+import { inBacklog } from "@/lib/backlog";
 import type { Knife, Owner } from "@/lib/storage/types";
 
 type SortKey = "overdue" | "recent" | "owner" | "added";
@@ -90,6 +92,11 @@ export default function HomePage() {
 
   const now = useMemo(() => new Date(), []);
 
+  const backlogCount = useMemo(
+    () => knives.filter(inBacklog).length,
+    [knives],
+  );
+
   // Hero: the most recently sharpened knife with a cover image. Pinned
   // independent of sort, hidden when search or owner filter is active
   // (the hero is a landing-page focal point, not a search result).
@@ -123,6 +130,20 @@ export default function HomePage() {
           <span>{owners.length === 1 ? "owner" : "owners"}</span>
         </p>
       </header>
+
+      {backlogCount > 0 && (
+        <Link
+          href="/backlog"
+          className="group flex items-center gap-3 rounded-md border border-brass/30 bg-brass/5 px-4 py-3 transition-colors hover:border-brass/50 hover:bg-brass/10 dark:border-brass/25 dark:bg-brass/[0.06]"
+        >
+          <Inbox className="h-4 w-4 text-brass" />
+          <span className="text-sm text-foreground">
+            <span className="font-mono">{backlogCount}</span>{" "}
+            {backlogCount === 1 ? "knife" : "knives"} in the backlog
+          </span>
+          <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground" />
+        </Link>
+      )}
 
       <div className="flex flex-wrap items-center gap-3">
         <Input
