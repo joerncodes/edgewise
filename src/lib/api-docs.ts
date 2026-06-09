@@ -56,6 +56,7 @@ const ENDPOINTS = `\
 | DELETE | \`/api/steels/{id}\`                    | —                  | 204 (409 if in use)      |
 | GET    | \`/api/stats\`                          | —                  | aggregate stats (see below) |
 | GET    | \`/api/diary\`                          | —                  | chronological session log (see below) |
+| GET    | \`/api/janitor\`                        | \`?staleAfterDays\`  | knives missing fields (see below) |
 | GET    | \`/api/docs\`                           | —                  | this document (markdown) |
 | GET    | \`/llms.txt\`                           | —                  | this document, unauth    |`;
 
@@ -102,6 +103,9 @@ curl -s $BASE/api/stats -H "Authorization: Bearer $TOKEN" | jq
 
 # Diary — every session ever, denormalized and grouped by month
 curl -s $BASE/api/diary -H "Authorization: Bearer $TOKEN" | jq
+
+# Janitor — knives missing fields (no photo, no steel, etc.) for backfill
+curl -s $BASE/api/janitor -H "Authorization: Bearer $TOKEN" | jq
 \`\`\`
 
 ## Diary
@@ -130,6 +134,32 @@ type Diary = {
   generatedAt: string;
 };
 \`\`\`
+
+## Janitor
+
+\`GET /api/janitor\` is the maintenance lens: knives grouped by which
+field they're missing, so you can backfill in batches. Pure derived
+view — no schema change. Optional query param \`?staleAfterDays=NNN\`
+(default 365) tunes the "not sharpened in a long time" bucket.
+
+\`\`\`ts
+type Janitor = {
+  noPhoto: KnifeRef[];
+  noSessions: KnifeRef[];
+  noSteel: KnifeRef[];
+  noType: KnifeRef[];
+  noManufacturer: KnifeRef[];
+  noNotes: KnifeRef[];
+  stale: (KnifeRef & { lastDate: string; daysSince: number })[];
+  staleAfterDays: number;
+  generatedAt: string;
+};
+
+type KnifeRef = { id: string; name: string; ownerId: string; ownerName: string };
+\`\`\`
+
+The matching UI is \`/janitor\` (also linked from the footer of
+\`/stats\`).
 
 ## Steels
 

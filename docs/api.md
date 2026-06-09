@@ -79,6 +79,17 @@ Every session across every knife, in one chronological stream. Shape
 lives in `src/lib/diary.ts` (`Diary` interface). The matching UI is
 `/diary`.
 
+### Janitor
+
+| Method | Path             | Query              | Returns                |
+|--------|------------------|--------------------|------------------------|
+| GET    | `/api/janitor`   | `?staleAfterDays`  | knives grouped by missing field |
+
+Pure derived view: knives without a photo, without a steel, without
+any sessions, etc. Shape lives in `src/lib/janitor.ts`. The matching
+UI is `/janitor`. `staleAfterDays` (default 365) tunes the
+"not sharpened in a long time" bucket.
+
 ### Stats
 
 | Method | Path          | Body | Returns                            |

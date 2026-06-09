@@ -1,9 +1,19 @@
 ---
 filetype: todo
-status: open
+status: done
+completedOn: 2026-06-09
 ---
 
 # Janitor view — surface knives with missing fields
+
+> **Done.** Implemented 2026-06-09. `/janitor` page renders the seven
+> predicates from the spec (no photo / no sessions / no steel / no
+> type / no manufacturer / no notes / stale > 12mo). Pure derived
+> view — `src/lib/janitor.ts` shares the compute function with
+> `GET /api/janitor`. Optional `?staleAfterDays` query param tunes
+> the stale cutoff. Linked from the `/stats` footer (not the main
+> nav, per the todo's "maintenance lens, not a primary view"
+> framing). `ListChecks` icon. Docs updated per ADR-0009.
 
 Fountain Pen Companion has a "Missing reviews" and "Missing
 descriptions" section that quietly nudges the community to backfill

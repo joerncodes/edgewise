@@ -1,6 +1,7 @@
 "use client";
 
-import { BarChart3 } from "lucide-react";
+import { BarChart3, ListChecks } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { BarList } from "@/components/stats/bar-list";
@@ -142,6 +143,17 @@ export default function StatsPage() {
               />
             </Section>
           </div>
+
+          <footer className="border-t border-border/40 pt-4">
+            <Link
+              href="/janitor"
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <ListChecks className="h-3.5 w-3.5" />
+              See what&apos;s missing in the corpus
+              <span aria-hidden>→</span>
+            </Link>
+          </footer>
         </div>
       )}
     </div>

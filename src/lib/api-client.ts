@@ -1,4 +1,5 @@
 import type { Diary } from "./diary";
+import type { Janitor } from "./janitor";
 import type { Stats } from "./stats";
 import type { Knife, Owner, SharpeningSession, Steel } from "./storage/types";
 
@@ -74,4 +75,5 @@ export const api = {
 
   getStats: () => request<Stats>("/api/stats"),
   getDiary: () => request<Diary>("/api/diary"),
+  getJanitor: () => request<Janitor>("/api/janitor"),
 };

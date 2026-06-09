@@ -1,9 +1,16 @@
 ---
 filetype: todo
-status: open
+status: done
+completedOn: 2026-06-09
 ---
 
 # Stats dashboard
+
+> **Done.** Implemented earlier on 2026-06-09. `/stats` page lives
+> with eight panels (sessions per month with year dividers, per
+> owner, top knives, steel/type mix, angle histogram, longest gap,
+> and the year-view heatmap added later). `GET /api/stats` returns
+> the same payload. See ADR-0009 for self-docs propagation.
 
 A `/stats` page that turns the data we already capture into something
 worth looking at — sessions over time, who gets sharpened most, which
