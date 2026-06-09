@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import type { SessionsByMonth } from "@/lib/stats";
 
 const MONTH_SHORT = [
@@ -18,13 +19,20 @@ export function MonthBars({ data }: { data: SessionsByMonth[] }) {
   }
   return (
     <div>
-      <div className="flex h-32 items-end gap-1">
-        {data.map((d) => {
+      <div className="flex h-32 items-stretch gap-1">
+        {data.map((d, i) => {
           const h = (d.count / max) * 100;
+          const { isJan } = monthLabel(d.month);
+          // Hairline divider on the left of every January (except the
+          // very first month) so the year boundary is visible.
+          const yearBoundary = isJan && i > 0;
           return (
             <div
               key={d.month}
-              className="group relative flex-1 min-w-0"
+              className={cn(
+                "group flex h-full flex-1 min-w-0 flex-col justify-end",
+                yearBoundary && "border-l border-border/60 pl-1",
+              )}
               title={`${d.month}: ${d.count} ${d.count === 1 ? "session" : "sessions"}`}
             >
               <div
@@ -36,10 +44,17 @@ export function MonthBars({ data }: { data: SessionsByMonth[] }) {
         })}
       </div>
       <div className="mt-2 flex gap-1 text-[10px] font-mono text-muted-foreground">
-        {data.map((d) => {
+        {data.map((d, i) => {
           const { isJan, year } = monthLabel(d.month);
+          const yearBoundary = isJan && i > 0;
           return (
-            <div key={d.month} className="flex-1 min-w-0 text-center">
+            <div
+              key={d.month}
+              className={cn(
+                "flex-1 min-w-0 text-center",
+                yearBoundary && "border-l border-border/60 pl-1 text-left",
+              )}
+            >
               {isJan ? year : ""}
             </div>
           );
