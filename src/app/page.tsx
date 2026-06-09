@@ -1,10 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useMemo, useState } from "react";
+import { EmptyState } from "@/components/empty-state";
 import { api } from "@/lib/api-client";
 import type { Knife, Owner } from "@/lib/storage/types";
+
+const dateFmt = new Intl.DateTimeFormat("de-DE", { dateStyle: "short" });
+
+function formatDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  return dateFmt.format(new Date(y, m - 1, d));
+}
 
 export default function HomePage() {
   const [knives, setKnives] = useState<Knife[]>([]);
@@ -20,60 +28,77 @@ export default function HomePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const totalSessions = knives.reduce((sum, k) => sum + k.sessions.length, 0);
-  const recent = knives
-    .flatMap((k) => k.sessions.map((s) => ({ knife: k, session: s })))
-    .sort((a, b) => b.session.date.localeCompare(a.session.date))
-    .slice(0, 5);
+  const allSessions = useMemo(
+    () =>
+      knives
+        .flatMap((k) => k.sessions.map((s) => ({ knife: k, session: s })))
+        .sort((a, b) => b.session.date.localeCompare(a.session.date)),
+    [knives],
+  );
+
+  const totalSessions = allSessions.length;
+  const latest = allSessions[0];
+  const recent = allSessions.slice(0, 8);
+
+  if (loading) {
+    return <p className="text-sm text-muted-foreground">Loading…</p>;
+  }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
-      {loading ? (
-        <p className="text-muted-foreground">Loading…</p>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Stat label="Knives" value={knives.length} href="/knives" />
-            <Stat label="Owners" value={owners.length} href="/owners" />
-            <Stat label="Sharpenings" value={totalSessions} />
-          </div>
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent sharpenings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {recent.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No sharpenings yet.</p>
-              ) : (
-                <ul className="space-y-2 text-sm">
-                  {recent.map(({ knife, session }, i) => (
-                    <li key={`${knife.id}-${i}`} className="flex items-center gap-3">
-                      <span className="text-muted-foreground tabular-nums">{session.date}</span>
-                      <Link href={`/knives/${knife.id}`} className="font-medium hover:underline">
-                        {knife.name}
-                      </Link>
-                      <span className="text-muted-foreground">@ {session.angle}°</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-        </>
-      )}
+    <div className="space-y-10">
+      <section className="space-y-2">
+        <h1 className="text-3xl font-semibold tracking-tight">Edgewise</h1>
+        <p className="text-sm text-muted-foreground">
+          <span className="font-mono">{knives.length}</span> knives
+          <span className="mx-2">·</span>
+          <span className="font-mono">{owners.length}</span> owners
+          <span className="mx-2">·</span>
+          <span className="font-mono">{totalSessions}</span> sharpenings
+          {latest && (
+            <>
+              <span className="mx-2">·</span>last:{" "}
+              <Link
+                href={`/knives/${latest.knife.id}`}
+                className="text-foreground hover:underline"
+              >
+                {latest.knife.name}
+              </Link>
+              , <span className="font-mono">{formatDate(latest.session.date)}</span>
+            </>
+          )}
+        </p>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          Recent sharpenings
+        </h2>
+        {recent.length === 0 ? (
+          <EmptyState
+            title="No sharpenings yet"
+            hint="Record one through the API or by creating a knife with a session."
+          />
+        ) : (
+          <ul className="-mx-2 divide-y divide-border/70">
+            {recent.map(({ knife, session }, i) => (
+              <li key={`${knife.id}-${i}`}>
+                <Link
+                  href={`/knives/${knife.id}`}
+                  className="flex items-baseline gap-4 rounded-md px-2 py-2.5 text-sm transition-colors hover:bg-accent/40 focus-visible:outline-2 focus-visible:outline-offset-2"
+                >
+                  <span className="w-20 shrink-0 font-mono text-muted-foreground">
+                    {formatDate(session.date)}
+                  </span>
+                  <span className="font-medium text-foreground">{knife.name}</span>
+                  <span className="ml-auto font-mono text-muted-foreground">
+                    {session.angle}°
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
-}
-
-function Stat({ label, value, href }: { label: string; value: number; href?: string }) {
-  const body = (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="text-3xl font-semibold tabular-nums">{value}</div>
-        <div className="text-sm text-muted-foreground">{label}</div>
-      </CardContent>
-    </Card>
-  );
-  return href ? <Link href={href}>{body}</Link> : body;
 }

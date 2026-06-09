@@ -1,19 +1,30 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { IBM_Plex_Mono, IBM_Plex_Sans, Oswald } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import Link from "next/link";
+import { NavLink } from "@/components/nav-link";
 import { SignOutButton } from "@/components/sign-out-button";
+import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const plexSans = IBM_Plex_Sans({
+  variable: "--font-plex-sans",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
+
+const oswald = Oswald({
+  variable: "--font-oswald",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -29,33 +40,35 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${plexSans.variable} ${plexMono.variable} ${oswald.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
-        <SessionProvider>
-          <header className="border-b">
-            <div className="mx-auto max-w-5xl flex items-center gap-6 px-4 py-3">
-              <Link href="/" className="font-semibold">
-                Edgewise
-              </Link>
-              <nav className="flex items-center gap-4 text-sm text-muted-foreground">
-                <Link href="/knives" className="hover:text-foreground">
-                  Knives
+        <ThemeProvider defaultTheme="dark">
+          <SessionProvider>
+            <header>
+              <div className="mx-auto flex h-12 max-w-3xl items-center gap-6 px-6 text-sm">
+                <Link
+                  href="/"
+                  className="font-heading text-lg font-semibold uppercase tracking-wider"
+                >
+                  Edgewise
                 </Link>
-                <Link href="/owners" className="hover:text-foreground">
-                  Owners
-                </Link>
-              </nav>
-              <div className="ml-auto">
-                <SignOutButton />
+                <nav className="flex items-center gap-5">
+                  <NavLink href="/knives">Knives</NavLink>
+                  <NavLink href="/owners">Owners</NavLink>
+                </nav>
+                <div className="ml-auto flex items-center gap-1">
+                  <ThemeToggle />
+                  <SignOutButton />
+                </div>
               </div>
-            </div>
-          </header>
-          <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">{children}</main>
-          <Toaster richColors position="top-right" />
-        </SessionProvider>
+            </header>
+            <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">{children}</main>
+            <Toaster richColors position="top-right" />
+          </SessionProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
 }
-

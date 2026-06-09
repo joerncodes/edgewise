@@ -1,15 +1,9 @@
 "use client";
 
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { EmptyState } from "@/components/empty-state";
 import { api } from "@/lib/api-client";
 import type { Owner } from "@/lib/storage/types";
 
@@ -25,38 +19,37 @@ export default function OwnersPage() {
   }, []);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-baseline justify-between">
-        <h1 className="text-2xl font-semibold">Owners</h1>
-        <span className="text-sm text-muted-foreground">
-          Create / edit via the API — see <code>docs/api.md</code>.
-        </span>
-      </div>
+    <div className="space-y-6">
+      <h1 className="text-3xl font-semibold tracking-tight">Owners</h1>
+
       {loading ? (
-        <p className="text-muted-foreground">Loading…</p>
+        <p className="text-sm text-muted-foreground">Loading…</p>
       ) : owners.length === 0 ? (
-        <p className="text-muted-foreground">No owners yet.</p>
+        <EmptyState
+          title="No owners yet"
+          hint="Create an owner through the API before logging knives for them."
+        />
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Contact</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {owners.map((o) => (
-              <TableRow key={o.id}>
-                <TableCell>
-                  <Link href={`/owners/${o.id}`} className="font-medium hover:underline">
-                    {o.name}
-                  </Link>
-                </TableCell>
-                <TableCell className="text-muted-foreground">{o.contact || "—"}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <ul className="-mx-2 divide-y divide-border/70">
+          {owners.map((o) => (
+            <li key={o.id}>
+              <Link
+                href={`/owners/${o.id}`}
+                className="group flex items-center gap-4 rounded-md px-2 py-3 transition-colors hover:bg-accent/40"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-medium text-foreground">{o.name}</div>
+                  {o.contact && (
+                    <div className="mt-0.5 truncate text-xs text-muted-foreground">
+                      {o.contact}
+                    </div>
+                  )}
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground" />
+              </Link>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

@@ -1,13 +1,21 @@
 "use client";
 
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PropertyList, PropertyRow } from "@/components/property-row";
 import { api } from "@/lib/api-client";
 import type { Knife, Owner } from "@/lib/storage/types";
+
+const dateFmt = new Intl.DateTimeFormat("de-DE", { dateStyle: "short" });
+
+function formatDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  return dateFmt.format(new Date(y, m - 1, d));
+}
 
 export default function KnifeDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -32,107 +40,118 @@ export default function KnifeDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <p className="text-muted-foreground">Loading…</p>;
-  if (!knife) return <p className="text-muted-foreground">Not found.</p>;
+  if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
+  if (!knife) return <p className="text-sm text-muted-foreground">Not found.</p>;
 
   const sortedSessions = [...knife.sessions].sort((a, b) => b.date.localeCompare(a.date));
+  const last = sortedSessions[0];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Link href="/knives" className="text-sm text-muted-foreground hover:underline">
-          ← All knives
+    <div className="space-y-12">
+      <header className="space-y-3">
+        <Link
+          href="/knives"
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-3 w-3" />
+          All knives
         </Link>
-        <h1 className="mt-1 text-2xl font-semibold">{knife.name}</h1>
-        <div className="mt-1 text-sm text-muted-foreground">
-          Owner:{" "}
+        <h1 className="text-4xl font-semibold tracking-tight">{knife.name}</h1>
+        <p className="text-sm text-muted-foreground">
           {owner ? (
-            <Link href={`/owners/${owner.id}`} className="hover:underline">
+            <Link href={`/owners/${owner.id}`} className="hover:text-foreground hover:underline">
               {owner.name}
             </Link>
           ) : (
             <span>{knife.ownerId}</span>
           )}
-        </div>
-      </div>
+        </p>
+      </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          <Detail label="Manufacturer" value={knife.manufacturer} />
-          <Detail label="Steel" value={knife.steel} />
-          <Detail
-            label="Type"
-            value={knife.type ? <Badge variant="secondary">{knife.type}</Badge> : ""}
-          />
-          {knife.notes && (
-            <div>
-              <div className="text-muted-foreground">Notes</div>
-              <p className="mt-1 whitespace-pre-wrap">{knife.notes}</p>
-            </div>
+      <section>
+        <PropertyList>
+          {owner && (
+            <PropertyRow label="Owner">
+              <Link href={`/owners/${owner.id}`} className="hover:underline">
+                {owner.name}
+              </Link>
+            </PropertyRow>
           )}
-        </CardContent>
-      </Card>
+          <PropertyRow label="Type">{knife.type}</PropertyRow>
+          <PropertyRow label="Manufacturer">{knife.manufacturer}</PropertyRow>
+          <PropertyRow label="Steel">{knife.steel}</PropertyRow>
+          {last && (
+            <PropertyRow label="Last sharpened">
+              <span className="font-mono">{formatDate(last.date)}</span>
+              <span className="mx-2 text-muted-foreground">@</span>
+              <span className="font-mono">{last.angle}°</span>
+            </PropertyRow>
+          )}
+          <PropertyRow label="Sharpenings">
+            <span className="font-mono">{knife.sessions.length}</span>
+          </PropertyRow>
+        </PropertyList>
+      </section>
 
       {knife.images.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Images ({knife.images.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {knife.images.map((img) => (
-                <figure key={img.filename} className="space-y-1">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={api.imageUrl(knife.id, img.filename)}
-                    alt={img.caption || knife.name}
-                    className="w-full rounded-md border object-cover"
-                  />
-                  {img.caption && (
-                    <figcaption className="text-xs text-muted-foreground">
-                      {img.caption}
-                    </figcaption>
-                  )}
-                </figure>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <section className="space-y-3">
+          <SectionLabel>Images</SectionLabel>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {knife.images.map((img) => (
+              <figure key={img.filename} className="space-y-1.5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={api.imageUrl(knife.id, img.filename)}
+                  alt={img.caption || knife.name}
+                  className="w-full rounded-md object-cover"
+                />
+                {img.caption && (
+                  <figcaption className="text-xs text-muted-foreground">{img.caption}</figcaption>
+                )}
+              </figure>
+            ))}
+          </div>
+        </section>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Sharpening sessions ({knife.sessions.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {sortedSessions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No sessions recorded yet.</p>
-          ) : (
-            <ul className="space-y-2 text-sm">
-              {sortedSessions.map((s, i) => (
-                <li key={i} className="flex items-baseline gap-3">
-                  <span className="tabular-nums text-muted-foreground">{s.date}</span>
-                  <span className="font-medium">{s.angle}°</span>
-                  {s.notes && <span className="text-muted-foreground">— {s.notes}</span>}
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+      <section className="space-y-3">
+        <SectionLabel>Sharpenings ({knife.sessions.length})</SectionLabel>
+        {sortedSessions.length === 0 ? (
+          <p className="text-sm text-muted-foreground">None yet.</p>
+        ) : (
+          <ol className="relative space-y-5 border-l border-border/60 pl-6">
+            {sortedSessions.map((s, i) => (
+              <li key={i} className="relative">
+                <span className="absolute -left-[27px] top-2 h-2 w-2 rounded-full bg-border" />
+                <div className="text-xs uppercase tracking-wider text-muted-foreground font-mono">
+                  {formatDate(s.date)}
+                </div>
+                <div className="mt-0.5 text-2xl font-semibold tracking-tight font-mono">
+                  {s.angle}°
+                </div>
+                {s.notes && (
+                  <p className="mt-1 text-sm text-muted-foreground">{s.notes}</p>
+                )}
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+
+      {knife.notes && (
+        <section className="space-y-3">
+          <SectionLabel>Notes</SectionLabel>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed">{knife.notes}</p>
+        </section>
+      )}
     </div>
   );
 }
 
-function Detail({ label, value }: { label: string; value: React.ReactNode }) {
-  if (!value) return null;
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex gap-3">
-      <span className="w-32 shrink-0 text-muted-foreground">{label}</span>
-      <span>{value}</span>
-    </div>
+    <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+      {children}
+    </h2>
   );
 }

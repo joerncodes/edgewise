@@ -1,10 +1,11 @@
 "use client";
 
+import { ArrowLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PropertyList, PropertyRow } from "@/components/property-row";
 import { api } from "@/lib/api-client";
 import type { Knife, Owner } from "@/lib/storage/types";
 
@@ -24,55 +25,77 @@ export default function OwnerDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <p className="text-muted-foreground">Loading…</p>;
-  if (!owner) return <p className="text-muted-foreground">Not found.</p>;
+  if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
+  if (!owner) return <p className="text-sm text-muted-foreground">Not found.</p>;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Link href="/owners" className="text-sm text-muted-foreground hover:underline">
-          ← All owners
+    <div className="space-y-12">
+      <header className="space-y-3">
+        <Link
+          href="/owners"
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-3 w-3" />
+          All owners
         </Link>
-        <h1 className="mt-1 text-2xl font-semibold">{owner.name}</h1>
-        {owner.contact && (
-          <p className="text-sm text-muted-foreground">{owner.contact}</p>
-        )}
-      </div>
+        <h1 className="text-4xl font-semibold tracking-tight">{owner.name}</h1>
+      </header>
+
+      <section>
+        <PropertyList>
+          <PropertyRow label="Contact">{owner.contact}</PropertyRow>
+          <PropertyRow label="Knives">
+            <span className="font-mono">{knives.length}</span>
+          </PropertyRow>
+        </PropertyList>
+      </section>
 
       {owner.notes && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Notes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="whitespace-pre-wrap text-sm">{owner.notes}</p>
-          </CardContent>
-        </Card>
+        <section className="space-y-3">
+          <SectionLabel>Notes</SectionLabel>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed">{owner.notes}</p>
+        </section>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Knives ({knives.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {knives.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No knives for this owner yet.</p>
-          ) : (
-            <ul className="space-y-2 text-sm">
-              {knives.map((k) => (
-                <li key={k.id}>
-                  <Link href={`/knives/${k.id}`} className="font-medium hover:underline">
-                    {k.name}
-                  </Link>
-                  <span className="ml-2 text-muted-foreground">
-                    {k.sessions.length} session{k.sessions.length === 1 ? "" : "s"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+      <section className="space-y-3">
+        <SectionLabel>Knives ({knives.length})</SectionLabel>
+        {knives.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No knives for this owner yet.</p>
+        ) : (
+          <ul className="-mx-2 divide-y divide-border/70">
+            {knives.map((k) => (
+              <li key={k.id}>
+                <Link
+                  href={`/knives/${k.id}`}
+                  className="group flex items-center gap-4 rounded-md px-2 py-3 transition-colors hover:bg-accent/40"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium">{k.name}</div>
+                    <div className="mt-0.5 truncate text-xs text-muted-foreground">
+                      {k.sessions.length} session{k.sessions.length === 1 ? "" : "s"}
+                      {k.type && (
+                        <>
+                          <span className="mx-1.5">·</span>
+                          {k.type}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+      {children}
+    </h2>
   );
 }

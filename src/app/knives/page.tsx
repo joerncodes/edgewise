@@ -1,18 +1,19 @@
 "use client";
 
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { EmptyState } from "@/components/empty-state";
 import { api } from "@/lib/api-client";
 import type { Knife, Owner } from "@/lib/storage/types";
+
+const dateFmt = new Intl.DateTimeFormat("de-DE", { dateStyle: "short" });
+
+function formatDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  return dateFmt.format(new Date(y, m - 1, d));
+}
 
 export default function KnivesPage() {
   const [knives, setKnives] = useState<Knife[]>([]);
@@ -34,53 +35,54 @@ export default function KnivesPage() {
   }, []);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-baseline justify-between">
-        <h1 className="text-2xl font-semibold">Knives</h1>
-        <span className="text-sm text-muted-foreground">
-          Create / edit via the API — see <code>docs/api.md</code>.
-        </span>
-      </div>
+    <div className="space-y-6">
+      <h1 className="text-3xl font-semibold tracking-tight">Knives</h1>
+
       {loading ? (
-        <p className="text-muted-foreground">Loading…</p>
+        <p className="text-sm text-muted-foreground">Loading…</p>
       ) : knives.length === 0 ? (
-        <p className="text-muted-foreground">No knives yet.</p>
+        <EmptyState
+          title="No knives yet"
+          hint="Create one through the API. The dashboard will pick it up immediately."
+        />
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Owner</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Last sharpened</TableHead>
-              <TableHead className="text-right">Sessions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {knives.map((k) => {
-              const last = k.sessions.at(-1);
-              return (
-                <TableRow key={k.id}>
-                  <TableCell>
-                    <Link href={`/knives/${k.id}`} className="font-medium hover:underline">
-                      {k.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {ownerById[k.ownerId]?.name ?? k.ownerId}
-                  </TableCell>
-                  <TableCell>
-                    {k.type && <Badge variant="secondary">{k.type}</Badge>}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground tabular-nums">
-                    {last ? `${last.date} @ ${last.angle}°` : "—"}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">{k.sessions.length}</TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        <ul className="-mx-2 divide-y divide-border/70">
+          {knives.map((k) => {
+            const last = k.sessions.at(-1);
+            return (
+              <li key={k.id}>
+                <Link
+                  href={`/knives/${k.id}`}
+                  className="group flex items-center gap-4 rounded-md px-2 py-3 transition-colors hover:bg-accent/40"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium text-foreground">{k.name}</div>
+                    <div className="mt-0.5 truncate text-xs text-muted-foreground">
+                      {ownerById[k.ownerId]?.name ?? k.ownerId}
+                      {k.type && (
+                        <>
+                          <span className="mx-1.5">·</span>
+                          <span>{k.type}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div className="hidden text-right text-xs text-muted-foreground font-mono sm:block">
+                    {last ? (
+                      <>
+                        <div>{formatDate(last.date)}</div>
+                        <div className="mt-0.5">{last.angle}°</div>
+                      </>
+                    ) : (
+                      <span>—</span>
+                    )}
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground" />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );

@@ -28,7 +28,9 @@ function LoginForm() {
     <div className="mx-auto mt-16 max-w-sm">
       <Card>
         <CardHeader>
-          <CardTitle>Edgewise</CardTitle>
+          <CardTitle className="font-heading text-2xl uppercase tracking-wider">
+            Edgewise
+          </CardTitle>
           <CardDescription>Enter the app password to continue.</CardDescription>
         </CardHeader>
         <CardContent>
