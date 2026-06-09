@@ -1,10 +1,11 @@
 "use client";
 
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, User } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { KnifeCard } from "@/components/knife-card";
 import { PropertyList, PropertyRow } from "@/components/property-row";
 import { api } from "@/lib/api-client";
 import type { Knife, Owner } from "@/lib/storage/types";
@@ -25,6 +26,8 @@ export default function OwnerDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  const now = useMemo(() => new Date(), []);
+
   if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
   if (!owner) return <p className="text-sm text-muted-foreground">Not found.</p>;
 
@@ -36,9 +39,13 @@ export default function OwnerDetailPage() {
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-3 w-3" />
+          <User className="h-3 w-3" />
           All owners
         </Link>
-        <h1 className="text-4xl font-semibold tracking-tight text-brass">{owner.name}</h1>
+        <h1 className="flex items-center gap-3 text-4xl font-semibold tracking-tight text-brass">
+          <User className="h-8 w-8" />
+          {owner.name}
+        </h1>
       </header>
 
       <section>
@@ -64,27 +71,10 @@ export default function OwnerDetailPage() {
         {knives.length === 0 ? (
           <p className="text-sm text-muted-foreground">No knives for this owner yet.</p>
         ) : (
-          <ul className="-mx-2 divide-y divide-border/70">
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {knives.map((k) => (
               <li key={k.id}>
-                <Link
-                  href={`/knives/${k.id}`}
-                  className="group flex items-center gap-4 rounded-md px-2 py-3 transition-colors hover:bg-accent/40"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium">{k.name}</div>
-                    <div className="mt-0.5 truncate text-xs text-muted-foreground">
-                      {k.sessions.length} session{k.sessions.length === 1 ? "" : "s"}
-                      {k.type && (
-                        <>
-                          <span className="mx-1.5">·</span>
-                          {k.type}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground" />
-                </Link>
+                <KnifeCard knife={k} owner={owner} now={now} />
               </li>
             ))}
           </ul>

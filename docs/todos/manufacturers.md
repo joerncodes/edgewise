@@ -1,9 +1,17 @@
 ---
 filetype: todo
-status: open
+status: done
+completedOn: 2026-06-09
 ---
 
 # List page for manufacturers
+
+> **Done.** Shipped as a derived view (no new storage). `/manufacturers`
+> lists every distinct manufacturer from knife frontmatter with a count;
+> `/manufacturers/<slug>` shows a card grid scoped to that maker.
+> Normalization helpers live at `src/lib/manufacturers.ts`. KnifeCard was
+> extracted to `src/components/knife-card.tsx` so the home page and the
+> manufacturer detail page share it.
 
 A `/manufacturers` page that lists every manufacturer that appears on any
 knife, with a count and a link to drill down to the knives by that maker.

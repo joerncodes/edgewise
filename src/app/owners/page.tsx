@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, User } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
@@ -20,7 +20,10 @@ export default function OwnersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-semibold tracking-tight text-brass">Owners</h1>
+      <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight text-brass">
+        <User className="h-7 w-7" />
+        Owners
+      </h1>
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
@@ -37,6 +40,7 @@ export default function OwnersPage() {
                 href={`/owners/${o.id}`}
                 className="group flex items-center gap-4 rounded-md px-2 py-3 transition-colors hover:bg-accent/40"
               >
+                <User className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-medium text-foreground">{o.name}</div>
                   {o.contact && (

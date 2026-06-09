@@ -1,3 +1,4 @@
+import { Factory, PocketKnife, Tags, User } from "lucide-react";
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans, Oswald } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
@@ -50,12 +51,24 @@ export default function RootLayout({
               <div className="mx-auto flex h-12 max-w-5xl items-center gap-6 px-6 text-sm">
                 <Link
                   href="/"
-                  className="font-heading text-lg font-semibold uppercase tracking-wider"
+                  className="flex items-center gap-1.5 font-heading text-lg font-semibold uppercase tracking-wider"
                 >
+                  <PocketKnife className="h-5 w-5" />
                   Edgewise
                 </Link>
                 <nav className="flex items-center gap-5">
-                  <NavLink href="/owners">Owners</NavLink>
+                  <NavLink href="/owners">
+                    <User className="h-4 w-4" />
+                    Owners
+                  </NavLink>
+                  <NavLink href="/manufacturers">
+                    <Factory className="h-4 w-4" />
+                    Manufacturers
+                  </NavLink>
+                  <NavLink href="/types">
+                    <Tags className="h-4 w-4" />
+                    Types
+                  </NavLink>
                 </nav>
                 <div className="ml-auto flex items-center gap-1">
                   <ThemeToggle />

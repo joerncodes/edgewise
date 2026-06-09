@@ -1,12 +1,13 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Factory, PocketKnife, Tags, User } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PropertyList, PropertyRow } from "@/components/property-row";
 import { api } from "@/lib/api-client";
+import { slugify } from "@/lib/storage/ids";
 import type { Knife, Owner } from "@/lib/storage/types";
 
 const dateFmt = new Intl.DateTimeFormat("de-DE", { dateStyle: "short" });
@@ -66,16 +67,27 @@ export default function KnifeDetailPage() {
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-3 w-3" />
+          <PocketKnife className="h-3 w-3" />
           All knives
         </Link>
-        <h1 className="text-4xl font-semibold tracking-tight text-brass">{knife.name}</h1>
+        <h1 className="flex items-center gap-3 text-4xl font-semibold tracking-tight text-brass">
+          <PocketKnife className="h-8 w-8" />
+          {knife.name}
+        </h1>
         <p className="text-sm text-muted-foreground">
           {owner ? (
-            <Link href={`/owners/${owner.id}`} className="hover:text-foreground hover:underline">
+            <Link
+              href={`/owners/${owner.id}`}
+              className="inline-flex items-center gap-1 hover:text-foreground hover:underline"
+            >
+              <User className="h-3.5 w-3.5" />
               {owner.name}
             </Link>
           ) : (
-            <span>{knife.ownerId}</span>
+            <span className="inline-flex items-center gap-1">
+              <User className="h-3.5 w-3.5" />
+              {knife.ownerId}
+            </span>
           )}
         </p>
       </header>
@@ -84,13 +96,37 @@ export default function KnifeDetailPage() {
         <PropertyList>
           {owner && (
             <PropertyRow label="Owner">
-              <Link href={`/owners/${owner.id}`} className="hover:underline">
+              <Link
+                href={`/owners/${owner.id}`}
+                className="inline-flex items-center gap-1.5 hover:underline"
+              >
+                <User className="h-3.5 w-3.5" />
                 {owner.name}
               </Link>
             </PropertyRow>
           )}
-          <PropertyRow label="Type">{knife.type}</PropertyRow>
-          <PropertyRow label="Manufacturer">{knife.manufacturer}</PropertyRow>
+          <PropertyRow label="Type">
+            {knife.type ? (
+              <Link
+                href={`/types/${slugify(knife.type)}`}
+                className="inline-flex items-center gap-1.5 hover:underline"
+              >
+                <Tags className="h-3.5 w-3.5" />
+                {knife.type}
+              </Link>
+            ) : null}
+          </PropertyRow>
+          <PropertyRow label="Manufacturer">
+            {knife.manufacturer ? (
+              <Link
+                href={`/manufacturers/${slugify(knife.manufacturer)}`}
+                className="inline-flex items-center gap-1.5 hover:underline"
+              >
+                <Factory className="h-3.5 w-3.5" />
+                {knife.manufacturer}
+              </Link>
+            ) : null}
+          </PropertyRow>
           <PropertyRow label="Steel">{knife.steel}</PropertyRow>
           {last && (
             <PropertyRow label="Last sharpened">
