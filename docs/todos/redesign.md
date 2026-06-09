@@ -1,6 +1,7 @@
 ---
 filetype: todo
-status: open
+status: done
+completedOn: 2026-06-09
 ---
 
 # Reskin: modern, Notion-ish CRUD aesthetic + dark mode

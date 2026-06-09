@@ -1,6 +1,7 @@
 ---
 filetype: todo
-status: open
+status: done
+completedOn: 2026-06-09
 ---
 
 # Front page: controls + card grid
