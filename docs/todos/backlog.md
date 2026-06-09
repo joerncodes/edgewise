@@ -14,8 +14,10 @@ completedOn: 2026-06-09
 > callout when N > 0. "In backlog" badge on the knife detail page.
 > Derived helpers in `src/lib/backlog.ts`. No `/api/backlog`
 > endpoint — pages filter client-side. `docs/data-model.md` and
-> `docs/api.md` updated. No nav badge (deferred per the open
-> question).
+> `docs/api.md` updated. Nav link added (Inbox icon, between Library
+> and Stats); count badge deferred per the open question. Manual
+> ordering of the backlog list is a separate todo —
+> [[backlog-manual-order]].
 
 A knife that's been dropped off but not sharpened yet should be
 visible at a glance. This is *not* derived from `sessions.length`
