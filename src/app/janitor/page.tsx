@@ -4,6 +4,12 @@ import { Check, ChevronRight, ListChecks, User } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { api } from "@/lib/api-client";
 import type { Janitor, KnifeRef, StaleKnifeRef } from "@/lib/janitor";
 
@@ -27,7 +33,8 @@ export default function JanitorPage() {
         </h1>
         <p className="text-sm text-muted-foreground">
           Quiet backfill list — knives that are missing fields you might want to
-          fill in. Click through and patch via the API.
+          fill in. Click a row to open the section, then click through to patch
+          via the API.
         </p>
       </header>
 
@@ -36,122 +43,130 @@ export default function JanitorPage() {
       ) : !janitor ? (
         <EmptyState title="Couldn't load" />
       ) : (
-        <div className="space-y-8">
+        <Accordion multiple className="space-y-0">
+          <Section value="no-photo" title="No photo" rows={janitor.noPhoto} />
           <Section
-            title="No photo"
-            rows={janitor.noPhoto}
-            hint="Knives without a single uploaded image."
-          />
-          <Section
+            value="no-sessions"
             title="No sessions yet"
             rows={janitor.noSessions}
-            hint="Knives that have never been sharpened — at least not in this app."
           />
+          <Section value="no-steel" title="No steel recorded" rows={janitor.noSteel} />
+          <Section value="no-type" title="No type recorded" rows={janitor.noType} />
           <Section
-            title="No steel recorded"
-            rows={janitor.noSteel}
-          />
-          <Section
-            title="No type recorded"
-            rows={janitor.noType}
-          />
-          <Section
+            value="no-manufacturer"
             title="No manufacturer recorded"
             rows={janitor.noManufacturer}
           />
-          <Section
-            title="No notes"
-            rows={janitor.noNotes}
-          />
+          <Section value="no-notes" title="No notes" rows={janitor.noNotes} />
           <StaleSection
+            value="stale"
             title={`Not sharpened in over ${Math.floor(
               janitor.staleAfterDays / 30,
             )} months`}
             rows={janitor.stale}
           />
-        </div>
+        </Accordion>
       )}
     </div>
   );
 }
 
 function Section({
+  value,
   title,
   rows,
-  hint,
 }: {
+  value: string;
   title: string;
   rows: KnifeRef[];
-  hint?: string;
 }) {
+  const empty = rows.length === 0;
   return (
-    <section className="space-y-3">
-      <div className="flex items-baseline gap-3">
-        <h2 className="font-heading text-sm uppercase tracking-wider text-foreground/80">
-          {title}
-        </h2>
-        <span className="font-mono text-xs text-muted-foreground">
-          {rows.length} {rows.length === 1 ? "knife" : "knives"}
-        </span>
-      </div>
-      {hint && <p className="-mt-1 text-xs text-muted-foreground">{hint}</p>}
-      {rows.length === 0 ? (
-        <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Check className="h-3.5 w-3.5 text-brass" />
-          All clean.
-        </p>
-      ) : (
-        <ul className="-mx-2 divide-y divide-border/60">
-          {rows.map((r) => (
-            <li key={r.id}>
-              <RowLink r={r} />
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+    <AccordionItem value={value}>
+      <AccordionTrigger className="text-foreground/90">
+        <div className="flex items-baseline gap-3">
+          <span className="font-heading text-sm uppercase tracking-wider">
+            {title}
+          </span>
+          {empty ? (
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <Check className="h-3 w-3 text-brass" />
+              all clean
+            </span>
+          ) : (
+            <span className="font-mono text-xs text-muted-foreground">
+              {rows.length} {rows.length === 1 ? "knife" : "knives"}
+            </span>
+          )}
+        </div>
+      </AccordionTrigger>
+      <AccordionContent>
+        {empty ? (
+          <p className="text-xs text-muted-foreground">Nothing here.</p>
+        ) : (
+          <ul className="-mx-2 divide-y divide-border/60">
+            {rows.map((r) => (
+              <li key={r.id}>
+                <RowLink r={r} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </AccordionContent>
+    </AccordionItem>
   );
 }
 
 function StaleSection({
+  value,
   title,
   rows,
 }: {
+  value: string;
   title: string;
   rows: StaleKnifeRef[];
 }) {
+  const empty = rows.length === 0;
   return (
-    <section className="space-y-3">
-      <div className="flex items-baseline gap-3">
-        <h2 className="font-heading text-sm uppercase tracking-wider text-foreground/80">
-          {title}
-        </h2>
-        <span className="font-mono text-xs text-muted-foreground">
-          {rows.length} {rows.length === 1 ? "knife" : "knives"}
-        </span>
-      </div>
-      {rows.length === 0 ? (
-        <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Check className="h-3.5 w-3.5 text-brass" />
-          All clean.
-        </p>
-      ) : (
-        <ul className="-mx-2 divide-y divide-border/60">
-          {rows.map((r) => (
-            <li key={r.id}>
-              <RowLink
-                r={r}
-                trailing={
-                  <span className="font-mono text-xs text-muted-foreground">
-                    {r.daysSince}d
-                  </span>
-                }
-              />
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+    <AccordionItem value={value}>
+      <AccordionTrigger className="text-foreground/90">
+        <div className="flex items-baseline gap-3">
+          <span className="font-heading text-sm uppercase tracking-wider">
+            {title}
+          </span>
+          {empty ? (
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <Check className="h-3 w-3 text-brass" />
+              all clean
+            </span>
+          ) : (
+            <span className="font-mono text-xs text-muted-foreground">
+              {rows.length} {rows.length === 1 ? "knife" : "knives"}
+            </span>
+          )}
+        </div>
+      </AccordionTrigger>
+      <AccordionContent>
+        {empty ? (
+          <p className="text-xs text-muted-foreground">Nothing here.</p>
+        ) : (
+          <ul className="-mx-2 divide-y divide-border/60">
+            {rows.map((r) => (
+              <li key={r.id}>
+                <RowLink
+                  r={r}
+                  trailing={
+                    <span className="font-mono text-xs text-muted-foreground">
+                      {r.daysSince}d
+                    </span>
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+      </AccordionContent>
+    </AccordionItem>
   );
 }
 
