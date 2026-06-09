@@ -1,6 +1,6 @@
 "use client";
 
-import { PocketKnife, User } from "lucide-react";
+import { PocketKnife, Sparkles, User } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { KnifeCard, lastSession } from "@/components/knife-card";
@@ -90,6 +90,22 @@ export default function HomePage() {
 
   const now = useMemo(() => new Date(), []);
 
+  // Hero: the most recently sharpened knife with a cover image. Pinned
+  // independent of sort, hidden when search or owner filter is active
+  // (the hero is a landing-page focal point, not a search result).
+  const isFilterActive = q.trim() !== "" || ownerFilter !== "all";
+  const heroKnife = useMemo(() => {
+    if (isFilterActive) return undefined;
+    const candidates = knives.filter((k) => k.images.length > 0 && lastSession(k));
+    if (candidates.length === 0) return undefined;
+    return candidates.sort((a, b) =>
+      (lastSession(b)?.date ?? "").localeCompare(lastSession(a)?.date ?? ""),
+    )[0];
+  }, [knives, isFilterActive]);
+  const gridKnives = heroKnife
+    ? filteredSorted.filter((k) => k.id !== heroKnife.id)
+    : filteredSorted;
+
   return (
     <div className="space-y-8">
       <header className="space-y-2">
@@ -174,17 +190,35 @@ export default function HomePage() {
           hint="Clear the search or change the owner filter."
         />
       ) : (
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredSorted.map((k) => (
-            <li key={k.id}>
+        <div className="space-y-6">
+          {heroKnife && (
+            <div className="space-y-2 md:relative md:left-1/2 md:-translate-x-1/2 md:w-[min(80rem,calc(100vw-2rem))]">
+              <h2 className="flex items-center gap-1.5 font-heading text-xs uppercase tracking-wider text-muted-foreground">
+                <Sparkles className="h-3.5 w-3.5" />
+                Most recently sharpened
+              </h2>
               <KnifeCard
-                knife={k}
-                owner={ownerById[k.ownerId]}
+                knife={heroKnife}
+                owner={ownerById[heroKnife.ownerId]}
                 now={now}
+                featured
               />
-            </li>
-          ))}
-        </ul>
+            </div>
+          )}
+          {gridKnives.length > 0 && (
+            <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {gridKnives.map((k) => (
+                <li key={k.id}>
+                  <KnifeCard
+                    knife={k}
+                    owner={ownerById[k.ownerId]}
+                    now={now}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
     </div>
   );

@@ -41,10 +41,14 @@ export function KnifeCard({
   knife,
   owner,
   now,
+  featured = false,
 }: {
   knife: Knife;
   owner?: Owner;
   now: Date;
+  // When true, lay out side-by-side on desktop with a taller image —
+  // same content, just more room. Mobile is unchanged.
+  featured?: boolean;
 }) {
   const [showHistory, setShowHistory] = useState(false);
   const last = lastSession(knife);
@@ -53,16 +57,38 @@ export function KnifeCard({
   const cover = knife.images[0];
 
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-lg border border-border/70 bg-card/30 transition-colors hover:border-border dark:border-border dark:bg-accent">
+    <article
+      className={cn(
+        "group relative flex h-full flex-col overflow-hidden rounded-lg border transition-colors",
+        featured
+          ? "border-brass/30 bg-brass/5 hover:border-brass/50 dark:border-brass/25 dark:bg-brass/[0.06] dark:hover:border-brass/40 md:flex-row"
+          : "border-border/70 bg-card/30 hover:border-border dark:border-border dark:bg-accent",
+      )}
+    >
       {cover && (
         <KnifeImage
-          src={api.imageUrl(knife.id, cover.filename, "thumb")}
+          src={api.imageUrl(knife.id, cover.filename, featured ? undefined : "thumb")}
           alt={cover.caption || knife.name}
-          className="aspect-[3/1] w-full overflow-hidden bg-muted/40"
+          className={cn(
+            "w-full overflow-hidden bg-muted/40",
+            featured
+              ? "aspect-[3/1] md:aspect-auto md:h-auto md:w-1/2 md:shrink-0 md:self-stretch"
+              : "aspect-[3/1]",
+          )}
           imgClassName="h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
         />
       )}
-      <div className="space-y-3 p-4">
+      <div
+        className={cn(
+          featured && "md:flex md:flex-1 md:flex-col",
+        )}
+      >
+      <div
+        className={cn(
+          "space-y-3 p-4",
+          featured && "md:p-6",
+        )}
+      >
         <div className="font-heading text-xs uppercase tracking-wider text-brass">
           <Link
             href={`/owners/${knife.ownerId}`}
@@ -197,6 +223,7 @@ export function KnifeCard({
           )}
         </div>
       )}
+      </div>
     </article>
   );
 }
