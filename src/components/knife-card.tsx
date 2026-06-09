@@ -3,6 +3,7 @@
 import { ChevronDown, ChevronRight, Factory, Tags, User } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { KnifeImage } from "@/components/knife-image";
 import { api } from "@/lib/api-client";
 import { slugify } from "@/lib/storage/ids";
 import { cn } from "@/lib/utils";
@@ -53,14 +54,12 @@ export function KnifeCard({
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-lg border border-border/70 bg-card/30 transition-colors hover:border-border dark:border-border dark:bg-accent">
       {cover && (
-        <div className="aspect-[3/1] w-full overflow-hidden bg-muted/40">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={api.imageUrl(knife.id, cover.filename, "thumb")}
-            alt={cover.caption || knife.name}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-          />
-        </div>
+        <KnifeImage
+          src={api.imageUrl(knife.id, cover.filename, "thumb")}
+          alt={cover.caption || knife.name}
+          className="aspect-[3/1] w-full overflow-hidden bg-muted/40"
+          imgClassName="h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+        />
       )}
       <div className="space-y-3 p-4">
         <div className="font-heading text-xs uppercase tracking-wider text-brass">

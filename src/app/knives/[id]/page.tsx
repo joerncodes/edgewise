@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { KnifeImage } from "@/components/knife-image";
 import { PropertyList, PropertyRow } from "@/components/property-row";
 import { api } from "@/lib/api-client";
 import { slugify } from "@/lib/storage/ids";
@@ -52,14 +53,13 @@ export default function KnifeDetailPage() {
   return (
     <div className="space-y-12">
       {hero && (
-        <div className="w-full overflow-hidden rounded-md bg-muted/40">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={api.imageUrl(knife.id, hero.filename)}
-            alt={hero.caption || knife.name}
-            className="block h-auto w-full"
-          />
-        </div>
+        <KnifeImage
+          src={api.imageUrl(knife.id, hero.filename)}
+          alt={hero.caption || knife.name}
+          className="w-full overflow-hidden rounded-md bg-muted/40"
+          imgClassName="h-auto"
+          loadingMinHeight="16rem"
+        />
       )}
       <header className="space-y-3">
         <Link
@@ -149,11 +149,12 @@ export default function KnifeDetailPage() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {galleryImages.map((img) => (
               <figure key={img.filename} className="space-y-1.5">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <KnifeImage
                   src={api.imageUrl(knife.id, img.filename)}
                   alt={img.caption || knife.name}
-                  className="w-full rounded-md object-cover"
+                  className="w-full overflow-hidden rounded-md bg-muted/40"
+                  imgClassName="h-auto"
+                  loadingMinHeight="10rem"
                 />
                 {img.caption && (
                   <figcaption className="text-xs text-muted-foreground">{img.caption}</figcaption>
