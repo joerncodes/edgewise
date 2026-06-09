@@ -55,7 +55,7 @@ export default function RootLayout({
                   className="flex items-center gap-1.5 font-heading text-lg font-semibold uppercase tracking-wider"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/logo.png" alt="" className="h-8 w-auto dark:invert" />
+                  <img src="/logo.png" alt="" className="h-8 w-auto" />
                   Edgewise
                 </Link>
                 <nav className="flex items-center gap-5">

@@ -117,7 +117,7 @@ export default function HomePage() {
     <div className="space-y-8">
       <header className="flex items-center gap-6">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.png" alt="" className="h-44 w-auto dark:invert" />
+        <img src="/logo.png" alt="" className="h-44 w-auto" />
         <div className="flex-1 space-y-3">
           <h1 className="text-3xl font-semibold tracking-tight text-brass">
             Edgewise
