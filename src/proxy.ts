@@ -4,7 +4,11 @@ import { auth, checkApiToken } from "@/lib/auth";
 export default auth((req) => {
   const { pathname } = req.nextUrl;
 
-  if (pathname.startsWith("/api/auth") || pathname === "/login") {
+  if (
+    pathname.startsWith("/api/auth") ||
+    pathname === "/login" ||
+    pathname === "/llms.txt"
+  ) {
     return NextResponse.next();
   }
 

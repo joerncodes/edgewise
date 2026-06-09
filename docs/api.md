@@ -54,6 +54,17 @@ with status `401`.
 | PATCH  | `/api/owners/{id}`  | partial input | `{ owner }`            |
 | DELETE | `/api/owners/{id}`  | —             | 204 (409 if in use)    |
 
+### Self-describing docs
+
+| Method | Path         | Body | Returns                          |
+|--------|--------------|------|----------------------------------|
+| GET    | `/api/docs`  | —    | this reference as `text/markdown`|
+| GET    | `/llms.txt`  | —    | same content, unauthenticated    |
+
+Both endpoints return the same document. The schema section is
+generated from the Zod definitions in `src/lib/storage/types.ts`, so
+it can't drift. See ADR-0009.
+
 ## Schemas
 
 See `src/lib/storage/types.ts` for the Zod source of truth.
