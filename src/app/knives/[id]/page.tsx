@@ -9,6 +9,7 @@ import { KnifeImage } from "@/components/knife-image";
 import { Markdown } from "@/components/markdown";
 import { PropertyList, PropertyRow } from "@/components/property-row";
 import { Stars } from "@/components/stars";
+import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api-client";
 import { slugify } from "@/lib/storage/ids";
 import type { Knife, Owner } from "@/lib/storage/types";
@@ -26,6 +27,24 @@ export default function KnifeDetailPage() {
   const [knife, setKnife] = useState<Knife | null>(null);
   const [owner, setOwner] = useState<Owner | null>(null);
   const [loading, setLoading] = useState(true);
+  const [toggling, setToggling] = useState(false);
+
+  async function toggleBacklog() {
+    if (!knife || toggling) return;
+    const next = !knife.backlog;
+    setToggling(true);
+    try {
+      const updated = await api.updateKnife(knife.id, { backlog: next });
+      setKnife(updated);
+      toast(next ? "Added to backlog" : "Removed from backlog", {
+        icon: <Inbox className="h-4 w-4" />,
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update");
+    } finally {
+      setToggling(false);
+    }
+  }
 
   useEffect(() => {
     api
@@ -78,10 +97,11 @@ export default function KnifeDetailPage() {
           {knife.backlog && (
             <Link
               href="/backlog"
-              className="inline-flex items-center gap-1 rounded-md border border-brass/40 bg-brass/10 px-2 py-0.5 text-xs uppercase tracking-wider text-brass hover:bg-brass/20"
+              aria-label="In backlog"
+              title="In backlog"
+              className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-brass/40 bg-brass/10 text-brass hover:bg-brass/20"
             >
               <Inbox className="h-3 w-3" />
-              In backlog
             </Link>
           )}
         </h1>
@@ -101,6 +121,17 @@ export default function KnifeDetailPage() {
             </span>
           )}
         </p>
+        <div>
+          <Button
+            variant="outline"
+            size="xs"
+            onClick={toggleBacklog}
+            disabled={toggling}
+          >
+            <Inbox />
+            {knife.backlog ? "Remove from backlog" : "Add to backlog"}
+          </Button>
+        </div>
       </header>
 
       <section>
