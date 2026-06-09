@@ -38,7 +38,7 @@ export default function OwnerDetailPage() {
           <ArrowLeft className="h-3 w-3" />
           All owners
         </Link>
-        <h1 className="text-4xl font-semibold tracking-tight">{owner.name}</h1>
+        <h1 className="text-4xl font-semibold tracking-tight text-brass">{owner.name}</h1>
       </header>
 
       <section>
@@ -58,7 +58,9 @@ export default function OwnerDetailPage() {
       )}
 
       <section className="space-y-3">
-        <SectionLabel>Knives ({knives.length})</SectionLabel>
+        <SectionLabel>
+          {knives.length === 1 ? "1 knife" : `${knives.length} knives`}
+        </SectionLabel>
         {knives.length === 0 ? (
           <p className="text-sm text-muted-foreground">No knives for this owner yet.</p>
         ) : (

@@ -47,13 +47,13 @@ export default function HomePage() {
   return (
     <div className="space-y-10">
       <section className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">Edgewise</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-brass">Edgewise</h1>
         <p className="text-sm text-muted-foreground">
-          <span className="font-mono">{knives.length}</span> knives
+          <Stat n={knives.length} one="knife" many="knives" />
           <span className="mx-2">·</span>
-          <span className="font-mono">{owners.length}</span> owners
+          <Stat n={owners.length} one="owner" many="owners" />
           <span className="mx-2">·</span>
-          <span className="font-mono">{totalSessions}</span> sharpenings
+          <Stat n={totalSessions} one="sharpening" many="sharpenings" />
           {latest && (
             <>
               <span className="mx-2">·</span>last:{" "}
@@ -100,5 +100,13 @@ export default function HomePage() {
         )}
       </section>
     </div>
+  );
+}
+
+function Stat({ n, one, many }: { n: number; one: string; many: string }) {
+  return (
+    <>
+      <span className="font-mono">{n}</span> {n === 1 ? one : many}
+    </>
   );
 }

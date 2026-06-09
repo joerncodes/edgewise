@@ -36,7 +36,7 @@ export default function KnivesPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-semibold tracking-tight">Knives</h1>
+      <h1 className="text-3xl font-semibold tracking-tight text-brass">Knives</h1>
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>

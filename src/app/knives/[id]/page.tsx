@@ -56,7 +56,7 @@ export default function KnifeDetailPage() {
           <ArrowLeft className="h-3 w-3" />
           All knives
         </Link>
-        <h1 className="text-4xl font-semibold tracking-tight">{knife.name}</h1>
+        <h1 className="text-4xl font-semibold tracking-tight text-brass">{knife.name}</h1>
         <p className="text-sm text-muted-foreground">
           {owner ? (
             <Link href={`/owners/${owner.id}`} className="hover:text-foreground hover:underline">
@@ -95,7 +95,9 @@ export default function KnifeDetailPage() {
 
       {knife.images.length > 0 && (
         <section className="space-y-3">
-          <SectionLabel>Images</SectionLabel>
+          <SectionLabel>
+            {knife.images.length === 1 ? "1 image" : `${knife.images.length} images`}
+          </SectionLabel>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {knife.images.map((img) => (
               <figure key={img.filename} className="space-y-1.5">
@@ -115,7 +117,9 @@ export default function KnifeDetailPage() {
       )}
 
       <section className="space-y-3">
-        <SectionLabel>Sharpenings ({knife.sessions.length})</SectionLabel>
+        <SectionLabel>
+          {knife.sessions.length === 1 ? "1 sharpening" : `${knife.sessions.length} sharpenings`}
+        </SectionLabel>
         {sortedSessions.length === 0 ? (
           <p className="text-sm text-muted-foreground">None yet.</p>
         ) : (

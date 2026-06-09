@@ -20,7 +20,7 @@ export default function OwnersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-semibold tracking-tight">Owners</h1>
+      <h1 className="text-3xl font-semibold tracking-tight text-brass">Owners</h1>
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
