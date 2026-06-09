@@ -45,9 +45,21 @@ export default function KnifeDetailPage() {
 
   const sortedSessions = [...knife.sessions].sort((a, b) => b.date.localeCompare(a.date));
   const last = sortedSessions[0];
+  const hero = knife.images[0];
+  const galleryImages = knife.images.slice(1);
 
   return (
     <div className="space-y-12">
+      {hero && (
+        <div className="w-full overflow-hidden rounded-md bg-muted/40">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={api.imageUrl(knife.id, hero.filename)}
+            alt={hero.caption || knife.name}
+            className="block h-auto w-full"
+          />
+        </div>
+      )}
       <header className="space-y-3">
         <Link
           href="/"
@@ -93,13 +105,13 @@ export default function KnifeDetailPage() {
         </PropertyList>
       </section>
 
-      {knife.images.length > 0 && (
+      {galleryImages.length > 0 && (
         <section className="space-y-3">
           <SectionLabel>
-            {knife.images.length === 1 ? "1 image" : `${knife.images.length} images`}
+            {galleryImages.length === 1 ? "1 more image" : `${galleryImages.length} more images`}
           </SectionLabel>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {knife.images.map((img) => (
+            {galleryImages.map((img) => (
               <figure key={img.filename} className="space-y-1.5">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img

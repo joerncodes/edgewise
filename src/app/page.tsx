@@ -52,7 +52,7 @@ export default function HomePage() {
 
   const [q, setQ] = useState("");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
-  const [sort, setSort] = useState<SortKey>("overdue");
+  const [sort, setSort] = useState<SortKey>("recent");
 
   useEffect(() => {
     Promise.all([api.listKnives(), api.listOwners()])
@@ -198,10 +198,22 @@ function KnifeCard({ knife, owner, now }: { knife: Knife; owner?: Owner; now: Da
   const last = lastSession(knife);
   const ownerName = owner?.name ?? knife.ownerId;
   const sortedSessions = [...knife.sessions].sort((a, b) => b.date.localeCompare(a.date));
+  const cover = knife.images[0];
 
   return (
-    <article className="group flex h-full flex-col rounded-lg border border-border/70 bg-card/30 p-4 transition-colors hover:border-border">
-      <Link href={`/knives/${knife.id}`} className="block space-y-3">
+    <article className="group flex h-full flex-col overflow-hidden rounded-lg border border-border/70 bg-card/30 transition-colors hover:border-border">
+      <Link href={`/knives/${knife.id}`} className="block">
+        {cover && (
+          <div className="aspect-[3/1] w-full overflow-hidden bg-muted/40">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={api.imageUrl(knife.id, cover.filename)}
+              alt={cover.caption || knife.name}
+              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            />
+          </div>
+        )}
+        <div className="space-y-3 p-4">
         <div className="font-heading text-xs uppercase tracking-wider text-brass">
           {ownerName}
         </div>
@@ -259,10 +271,11 @@ function KnifeCard({ knife, owner, now }: { knife: Knife; owner?: Owner; now: Da
             {knife.notes}
           </p>
         )}
+        </div>
       </Link>
 
       {sortedSessions.length > 0 && (
-        <div className="mt-3 border-t border-border/50 pt-2">
+        <div className="mx-4 mb-4 mt-1 border-t border-border/50 pt-2">
           <button
             type="button"
             onClick={() => setShowHistory((v) => !v)}
