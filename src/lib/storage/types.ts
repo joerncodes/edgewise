@@ -82,6 +82,8 @@ export interface KnifeImageBlob {
   contentType: ImageMimeType;
 }
 
+export type ImageSize = "original" | "thumb";
+
 export interface Storage {
   listKnives(): Promise<Knife[]>;
   getKnife(id: string): Promise<Knife | null>;
@@ -94,7 +96,11 @@ export interface Storage {
     contentType: ImageMimeType,
     bytes: Buffer,
   ): Promise<void>;
-  readKnifeImage(knifeId: string, filename: string): Promise<KnifeImageBlob | null>;
+  readKnifeImage(
+    knifeId: string,
+    filename: string,
+    size?: ImageSize,
+  ): Promise<KnifeImageBlob | null>;
   deleteKnifeImage(knifeId: string, filename: string): Promise<boolean>;
 
   listOwners(): Promise<Owner[]>;

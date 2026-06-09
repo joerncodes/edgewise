@@ -56,7 +56,7 @@ export function KnifeCard({
         <div className="aspect-[3/1] w-full overflow-hidden bg-muted/40">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={api.imageUrl(knife.id, cover.filename)}
+            src={api.imageUrl(knife.id, cover.filename, "thumb")}
             alt={cover.caption || knife.name}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />

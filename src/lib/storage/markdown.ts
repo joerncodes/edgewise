@@ -1,17 +1,45 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import matter from "gray-matter";
+import sharp from "sharp";
 import YAML from "yaml";
 import {
   KnifeSchema,
   OwnerSchema,
   mimeFromFilename,
   type ImageMimeType,
+  type ImageSize,
   type Knife,
   type KnifeImageBlob,
   type Owner,
   type Storage,
 } from "./types";
+
+// Thumbnails are always JPEG, sized to fit the 3:1 card cover. See
+// docs/todos/thumbnails.md.
+const THUMB_WIDTH = 600;
+const THUMB_HEIGHT = 200;
+const THUMB_QUALITY = 80;
+const THUMB_EXT = "jpg";
+const THUMB_MIME: ImageMimeType = "image/jpeg";
+
+export function thumbFilename(filename: string): string {
+  const dot = filename.lastIndexOf(".");
+  const stem = dot > 0 ? filename.slice(0, dot) : filename;
+  return `${stem}.thumb.${THUMB_EXT}`;
+}
+
+export function isThumbFilename(filename: string): boolean {
+  return filename.toLowerCase().endsWith(`.thumb.${THUMB_EXT}`);
+}
+
+export async function makeThumbnail(bytes: Buffer): Promise<Buffer> {
+  return sharp(bytes)
+    .rotate() // honour EXIF orientation
+    .resize(THUMB_WIDTH, THUMB_HEIGHT, { fit: "cover", position: "centre" })
+    .jpeg({ quality: THUMB_QUALITY, mozjpeg: true })
+    .toBuffer();
+}
 
 function normalizeDates<T>(value: T): T {
   if (value instanceof Date) {
@@ -157,9 +185,39 @@ export class MarkdownStorage implements Storage {
     const target = this.knifeImagePath(knifeId, filename);
     await fs.mkdir(path.dirname(target), { recursive: true });
     await fs.writeFile(target, bytes);
+
+    // Derivative for card-grid use; failures are non-fatal — the read
+    // path falls back to the original if the thumb is missing.
+    try {
+      const thumbBytes = await makeThumbnail(bytes);
+      const thumbPath = this.knifeImagePath(knifeId, thumbFilename(filename));
+      await fs.writeFile(thumbPath, thumbBytes);
+    } catch (err) {
+      console.warn(
+        `thumb generation failed for ${knifeId}/${filename}:`,
+        (err as Error).message,
+      );
+    }
   }
 
-  async readKnifeImage(knifeId: string, filename: string): Promise<KnifeImageBlob | null> {
+  async readKnifeImage(
+    knifeId: string,
+    filename: string,
+    size: ImageSize = "original",
+  ): Promise<KnifeImageBlob | null> {
+    if (size === "thumb") {
+      try {
+        const bytes = await fs.readFile(
+          this.knifeImagePath(knifeId, thumbFilename(filename)),
+        );
+        return { bytes, contentType: THUMB_MIME };
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+        // Fall through and serve the original — covers images uploaded
+        // before the thumb feature shipped and any cases where the
+        // generation step failed.
+      }
+    }
     const mime = mimeFromFilename(filename);
     if (!mime) return null;
     try {
@@ -172,13 +230,19 @@ export class MarkdownStorage implements Storage {
   }
 
   async deleteKnifeImage(knifeId: string, filename: string): Promise<boolean> {
+    let removed = false;
     try {
       await fs.unlink(this.knifeImagePath(knifeId, filename));
-      return true;
+      removed = true;
     } catch (err) {
-      if ((err as NodeJS.ErrnoException).code === "ENOENT") return false;
-      throw err;
+      if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
     }
+    try {
+      await fs.unlink(this.knifeImagePath(knifeId, thumbFilename(filename)));
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    }
+    return removed;
   }
 
   async listOwners(): Promise<Owner[]> {

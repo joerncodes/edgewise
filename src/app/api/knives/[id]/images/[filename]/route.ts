@@ -3,10 +3,11 @@ import { json, notFound, nowIso, serverError } from "@/lib/http";
 
 type Ctx = { params: Promise<{ id: string; filename: string }> };
 
-export async function GET(_req: Request, { params }: Ctx) {
+export async function GET(req: Request, { params }: Ctx) {
   try {
     const { id, filename } = await params;
-    const blob = await getStorage().readKnifeImage(id, filename);
+    const size = new URL(req.url).searchParams.get("size") === "thumb" ? "thumb" : "original";
+    const blob = await getStorage().readKnifeImage(id, filename, size);
     if (!blob) return notFound("image not found");
     return new Response(new Uint8Array(blob.bytes), {
       status: 200,

@@ -35,8 +35,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }).then((r) => r.knife),
-  imageUrl: (knifeId: string, filename: string) =>
-    `/api/knives/${encodeURIComponent(knifeId)}/images/${encodeURIComponent(filename)}`,
+  imageUrl: (knifeId: string, filename: string, size?: "thumb") =>
+    `/api/knives/${encodeURIComponent(knifeId)}/images/${encodeURIComponent(filename)}${
+      size === "thumb" ? "?size=thumb" : ""
+    }`,
   deleteImage: (knifeId: string, filename: string) =>
     request<{ knife: Knife }>(
       `/api/knives/${knifeId}/images/${encodeURIComponent(filename)}`,

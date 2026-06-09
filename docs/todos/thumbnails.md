@@ -1,9 +1,17 @@
 ---
 filetype: todo
-status: open
+status: done
+completedOn: 2026-06-09
 ---
 
 # Cache thumbnails for knife card images
+
+> **Done.** Implemented 2026-06-09. `sharp` generates a 600×200 JPEG
+> thumb at upload time, stored next to the original as
+> `<basename>.thumb.jpg`. The image endpoint accepts `?size=thumb` and
+> falls back to the original if no thumb is on disk.
+> `scripts/backfill-thumbs.mjs` (`pnpm backfill:thumbs`) handles
+> pre-existing uploads. ADR-0010 codifies "backfill, no create-on-miss".
 
 Right now the home page card grid serves the full-resolution upload for
 every cover image — `src/components/knife-card.tsx` renders an `<img>`
