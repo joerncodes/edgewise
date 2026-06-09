@@ -4,6 +4,7 @@ import { BarChart3 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { BarList } from "@/components/stats/bar-list";
+import { Heatmap } from "@/components/stats/heatmap";
 import { MonthBars } from "@/components/stats/month-bars";
 import { api } from "@/lib/api-client";
 import type { Stats } from "@/lib/stats";
@@ -56,6 +57,13 @@ export default function StatsPage() {
         />
       ) : (
         <div className="space-y-10">
+          <Section
+            title="Sharpening rhythm"
+            subtitle="Last 53 weeks. Brighter = more sessions that day."
+          >
+            <Heatmap data={stats.dailySessionCounts} />
+          </Section>
+
           <Section title="Sessions per month" subtitle="Last 24 months, idle months included.">
             <MonthBars data={stats.sessionsByMonth} />
           </Section>

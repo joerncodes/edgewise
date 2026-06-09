@@ -28,6 +28,11 @@ export interface AngleBucket {
   count: number;
 }
 
+export interface DailySessionCount {
+  date: string; // YYYY-MM-DD
+  count: number;
+}
+
 export interface OverdueEntry {
   id: string;
   name: string;
@@ -49,10 +54,15 @@ export interface Stats {
   knivesByType: CountByLabel[];
   angleHistogram: AngleBucket[];
   longestGap: OverdueEntry[];
+  // Dense list of one entry per day for the rolling 53-week window
+  // ending today, oldest first. Anchored to a Monday so it packs into
+  // a 53-column x 7-row grid cleanly.
+  dailySessionCounts: DailySessionCount[];
   generatedAt: string;
 }
 
 const MONTH_WINDOW = 24;
+const HEATMAP_WEEKS = 53;
 
 function ymKey(dateIso: string): string {
   return dateIso.slice(0, 7);
@@ -164,6 +174,35 @@ export function computeStats(
     })
     .slice(0, 10);
 
+  // --- daily session counts for the heatmap. Anchor the window to the
+  // Monday HEATMAP_WEEKS weeks before the Monday of the current week so
+  // the result always fills a 53x7 grid cleanly.
+  const dayCounts = new Map<string, number>();
+  for (const k of knives) {
+    for (const s of k.sessions) {
+      dayCounts.set(s.date, (dayCounts.get(s.date) ?? 0) + 1);
+    }
+  }
+
+  const todayUtc = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+  );
+  // Date.getUTCDay(): 0=Sun..6=Sat. Treat Monday as start of week.
+  const dayOfWeek = (new Date(todayUtc).getUTCDay() + 6) % 7; // 0=Mon..6=Sun
+  const startMs = todayUtc - (dayOfWeek + (HEATMAP_WEEKS - 1) * 7) * 86_400_000;
+
+  const dailySessionCounts: DailySessionCount[] = [];
+  for (let i = 0; i < HEATMAP_WEEKS * 7; i++) {
+    const d = new Date(startMs + i * 86_400_000);
+    const iso = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(
+      2,
+      "0",
+    )}-${String(d.getUTCDate()).padStart(2, "0")}`;
+    dailySessionCounts.push({ date: iso, count: dayCounts.get(iso) ?? 0 });
+  }
+
   return {
     totals: {
       knives: knives.length,
@@ -177,6 +216,7 @@ export function computeStats(
     knivesByType,
     angleHistogram,
     longestGap,
+    dailySessionCounts,
     generatedAt: now.toISOString(),
   };
 }

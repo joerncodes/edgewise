@@ -159,6 +159,7 @@ type Stats = {
     id: string; name: string; ownerId: string;
     lastDate: string | null; daysSince: number | null;
   }[]; // top 10, never-sharpened first
+  dailySessionCounts: { date: string; count: number }[]; // 53 weeks dense
   generatedAt: string;
 };
 \`\`\``;

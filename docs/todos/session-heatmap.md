@@ -1,9 +1,17 @@
 ---
 filetype: todo
-status: open
+status: done
+completedOn: 2026-06-09
 ---
 
 # Year-view session heatmap
+
+> **Done.** Implemented 2026-06-09 as a panel on `/stats`
+> ("Sharpening rhythm"). 53×7 CSS-grid of brass-tinted cells, last 53
+> weeks anchored to Monday. `Stats.dailySessionCounts` carries the
+> dense daily series so external clients get the same data. No chart
+> dependency added. Mobile falls back to horizontal scroll on narrow
+> widths.
 
 A calendar grid of every day in a rolling 12-month window, each cell
 shaded by how many sharpening sessions happened that day. Inspired by
