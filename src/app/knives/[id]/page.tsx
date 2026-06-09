@@ -50,7 +50,7 @@ export default function KnifeDetailPage() {
     <div className="space-y-12">
       <header className="space-y-3">
         <Link
-          href="/knives"
+          href="/"
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-3 w-3" />

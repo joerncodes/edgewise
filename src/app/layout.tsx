@@ -47,7 +47,7 @@ export default function RootLayout({
         <ThemeProvider defaultTheme="dark">
           <SessionProvider>
             <header>
-              <div className="mx-auto flex h-12 max-w-3xl items-center gap-6 px-6 text-sm">
+              <div className="mx-auto flex h-12 max-w-5xl items-center gap-6 px-6 text-sm">
                 <Link
                   href="/"
                   className="font-heading text-lg font-semibold uppercase tracking-wider"
@@ -55,7 +55,6 @@ export default function RootLayout({
                   Edgewise
                 </Link>
                 <nav className="flex items-center gap-5">
-                  <NavLink href="/knives">Knives</NavLink>
                   <NavLink href="/owners">Owners</NavLink>
                 </nav>
                 <div className="ml-auto flex items-center gap-1">
@@ -64,7 +63,7 @@ export default function RootLayout({
                 </div>
               </div>
             </header>
-            <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">{children}</main>
+            <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">{children}</main>
             <Toaster richColors position="top-right" />
           </SessionProvider>
         </ThemeProvider>
