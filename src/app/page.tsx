@@ -115,35 +115,37 @@ export default function HomePage() {
 
   return (
     <div className="space-y-8">
-      <header className="space-y-2">
-        <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight text-brass">
-          <PocketKnife className="h-7 w-7" />
-          Edgewise
-        </h1>
-        <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
-          <PocketKnife className="h-3.5 w-3.5" />
-          <span className="font-mono">{knives.length}</span>
-          <span>{knives.length === 1 ? "knife" : "knives"}</span>
-          <span>·</span>
-          <User className="h-3.5 w-3.5" />
-          <span className="font-mono">{owners.length}</span>
-          <span>{owners.length === 1 ? "owner" : "owners"}</span>
-        </p>
+      <header className="flex items-center gap-6">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="" className="h-44 w-auto dark:invert" />
+        <div className="flex-1 space-y-3">
+          <h1 className="text-3xl font-semibold tracking-tight text-brass">
+            Edgewise
+          </h1>
+          <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
+            <PocketKnife className="h-3.5 w-3.5" />
+            <span className="font-mono">{knives.length}</span>
+            <span>{knives.length === 1 ? "knife" : "knives"}</span>
+            <span>·</span>
+            <User className="h-3.5 w-3.5" />
+            <span className="font-mono">{owners.length}</span>
+            <span>{owners.length === 1 ? "owner" : "owners"}</span>
+          </p>
+          {backlogCount > 0 && (
+            <Link
+              href="/backlog"
+              className="group flex items-center gap-3 rounded-md border border-brass/30 bg-brass/5 px-4 py-3 transition-colors hover:border-brass/50 hover:bg-brass/10 dark:border-brass/25 dark:bg-brass/[0.06]"
+            >
+              <Inbox className="h-4 w-4 text-brass" />
+              <span className="text-sm text-foreground">
+                <span className="font-mono">{backlogCount}</span>{" "}
+                {backlogCount === 1 ? "knife" : "knives"} in the backlog
+              </span>
+              <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground" />
+            </Link>
+          )}
+        </div>
       </header>
-
-      {backlogCount > 0 && (
-        <Link
-          href="/backlog"
-          className="group flex items-center gap-3 rounded-md border border-brass/30 bg-brass/5 px-4 py-3 transition-colors hover:border-brass/50 hover:bg-brass/10 dark:border-brass/25 dark:bg-brass/[0.06]"
-        >
-          <Inbox className="h-4 w-4 text-brass" />
-          <span className="text-sm text-foreground">
-            <span className="font-mono">{backlogCount}</span>{" "}
-            {backlogCount === 1 ? "knife" : "knives"} in the backlog
-          </span>
-          <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground" />
-        </Link>
-      )}
 
       <div className="flex flex-wrap items-center gap-3">
         <Input

@@ -1,4 +1,4 @@
-import { BarChart3, Inbox, NotebookPen, PocketKnife } from "lucide-react";
+import { BarChart3, Inbox, NotebookPen } from "lucide-react";
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans, Oswald } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
@@ -54,7 +54,8 @@ export default function RootLayout({
                   href="/"
                   className="flex items-center gap-1.5 font-heading text-lg font-semibold uppercase tracking-wider"
                 >
-                  <PocketKnife className="h-5 w-5" />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/logo.png" alt="" className="h-8 w-auto dark:invert" />
                   Edgewise
                 </Link>
                 <nav className="flex items-center gap-5">
