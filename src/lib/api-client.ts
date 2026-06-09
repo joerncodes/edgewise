@@ -1,3 +1,4 @@
+import type { Stats } from "./stats";
 import type { Knife, Owner, SharpeningSession } from "./storage/types";
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
@@ -54,4 +55,6 @@ export const api = {
       body: JSON.stringify(body),
     }).then((r) => r.owner),
   deleteOwner: (id: string) => request<void>(`/api/owners/${id}`, { method: "DELETE" }),
+
+  getStats: () => request<Stats>("/api/stats"),
 };

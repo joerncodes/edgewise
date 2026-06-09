@@ -54,6 +54,18 @@ with status `401`.
 | PATCH  | `/api/owners/{id}`  | partial input | `{ owner }`            |
 | DELETE | `/api/owners/{id}`  | —             | 204 (409 if in use)    |
 
+### Stats
+
+| Method | Path          | Body | Returns                            |
+|--------|---------------|------|------------------------------------|
+| GET    | `/api/stats`  | —    | aggregate stats JSON (see below)   |
+
+Pure derived view — no persistent state. The shape lives in
+`src/lib/stats.ts` (`Stats` interface) and includes totals, sessions
+per month (24-month dense window), sessions per owner, top knives by
+session count, steel and type mix, angle histogram, and longest gaps
+since last sharpening.
+
 ### Self-describing docs
 
 | Method | Path         | Body | Returns                          |

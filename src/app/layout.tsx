@@ -1,4 +1,4 @@
-import { Factory, PocketKnife, Tags, User } from "lucide-react";
+import { BarChart3, Factory, PocketKnife, Tags, User } from "lucide-react";
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans, Oswald } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
@@ -68,6 +68,10 @@ export default function RootLayout({
                   <NavLink href="/types">
                     <Tags className="h-4 w-4" />
                     Types
+                  </NavLink>
+                  <NavLink href="/stats">
+                    <BarChart3 className="h-4 w-4" />
+                    Stats
                   </NavLink>
                 </nav>
                 <div className="ml-auto flex items-center gap-1">

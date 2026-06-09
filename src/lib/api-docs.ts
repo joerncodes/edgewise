@@ -45,6 +45,7 @@ const ENDPOINTS = `\
 | GET    | \`/api/owners/{id}\`                    | —                  | \`{ owner }\`              |
 | PATCH  | \`/api/owners/{id}\`                    | partial \`OwnerInput\` | \`{ owner }\`           |
 | DELETE | \`/api/owners/{id}\`                    | —                  | 204 (409 if in use)      |
+| GET    | \`/api/stats\`                          | —                  | aggregate stats (see below) |
 | GET    | \`/api/docs\`                           | —                  | this document (markdown) |
 | GET    | \`/llms.txt\`                           | —                  | this document, unauth    |`;
 
@@ -79,6 +80,31 @@ curl -s -X POST $BASE/api/knives/wusthof-chef-8/images \\
 
 # Fetch this document
 curl -s $BASE/api/docs -H "Authorization: Bearer $TOKEN"
+
+# Aggregate stats — sessions/month, per-owner counts, angle histogram, etc.
+curl -s $BASE/api/stats -H "Authorization: Bearer $TOKEN" | jq
+\`\`\`
+
+## Stats
+
+\`GET /api/stats\` returns a single JSON object aggregated from the
+markdown corpus. Pure derived view — no persistent state. Shape:
+
+\`\`\`ts
+type Stats = {
+  totals: { knives: number; owners: number; sessions: number };
+  sessionsByMonth: { month: string /* YYYY-MM */; count: number }[]; // last 24 months
+  sessionsByOwner: { ownerId: string; ownerName: string; count: number }[];
+  topKnivesBySessions: { id: string; name: string; ownerId: string; count: number }[]; // top 10
+  knivesBySteel: { label: string; count: number }[];
+  knivesByType: { label: string; count: number }[];
+  angleHistogram: { bucket: string; count: number }[]; // whole-degree buckets
+  longestGap: {
+    id: string; name: string; ownerId: string;
+    lastDate: string | null; daysSince: number | null;
+  }[]; // top 10, never-sharpened first
+  generatedAt: string;
+};
 \`\`\``;
 
 export function renderApiDocs(): string {
