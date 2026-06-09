@@ -9,6 +9,9 @@ $DATA_DIR/
     <slug>.md
   owners/
     <slug>.md
+  images/
+    <knife-id>/
+      <filename>
 ```
 
 `<slug>` is `slugify(name)` unless an explicit `id` is provided on create.
@@ -92,7 +95,7 @@ Fields:
 ### Image
 
 A knife can carry 0..n images. The frontmatter holds the metadata; bytes
-live under `$DATA_DIR/knives/<id>/images/<filename>` and are served via
+live under `$DATA_DIR/images/<knife-id>/<filename>` and are served via
 `GET /api/knives/<id>/images/<filename>`.
 
 | field      | type   | required | notes                                  |
@@ -112,14 +115,19 @@ size: 10 MB.
 $DATA_DIR/
   knives/
     guido-kleines-santoku.md
-    guido-kleines-santoku/
-      images/
-        guido-kleines-santoku.png
   owners/
     guido-goebbels.md
+  images/
+    guido-kleines-santoku/
+      guido-kleines-santoku.png
 ```
 
-Deleting a knife removes the per-knife directory too.
+Deleting a knife removes the matching `images/<knife-id>/` directory too.
+
+Prior versions stored image bytes under `$DATA_DIR/knives/<id>/images/`.
+Migration is a one-shot `mv data/knives/<id>/images data/images/<id>` per
+knife — no frontmatter changes; filenames in the `images:` array still
+match the on-disk basenames.
 
 `angle` is per-session: a knife can be re-profiled over time.
 

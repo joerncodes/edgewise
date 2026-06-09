@@ -37,16 +37,19 @@ export class MarkdownStorage implements Storage {
   private dataDir: string;
   private knivesDir: string;
   private ownersDir: string;
+  private imagesDir: string;
 
   constructor(opts: MarkdownStorageOptions) {
     this.dataDir = opts.dataDir;
     this.knivesDir = path.join(this.dataDir, "knives");
     this.ownersDir = path.join(this.dataDir, "owners");
+    this.imagesDir = path.join(this.dataDir, "images");
   }
 
   private async ensureDirs() {
     await fs.mkdir(this.knivesDir, { recursive: true });
     await fs.mkdir(this.ownersDir, { recursive: true });
+    await fs.mkdir(this.imagesDir, { recursive: true });
   }
 
   private knifePath(id: string) {
@@ -58,7 +61,7 @@ export class MarkdownStorage implements Storage {
   }
 
   private knifeImagesDir(id: string) {
-    return path.join(this.knivesDir, id, "images");
+    return path.join(this.imagesDir, id);
   }
 
   private knifeImagePath(id: string, filename: string) {
@@ -141,7 +144,7 @@ export class MarkdownStorage implements Storage {
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
     }
-    await fs.rm(path.join(this.knivesDir, id), { recursive: true, force: true });
+    await fs.rm(this.knifeImagesDir(id), { recursive: true, force: true });
     return removedMd;
   }
 
