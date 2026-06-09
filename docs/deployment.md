@@ -69,15 +69,17 @@ variables" section):
 APP_PASSWORD=…
 API_TOKEN=…
 AUTH_SECRET=…
-NEXTAUTH_URL=https://edgewise.your.domain
+AUTH_URL=https://edgewise.your.domain
 EDGEWISE_PORT=3000
 EDGEWISE_DATA=/srv/edgewise/data
 EDGEWISE_IMAGE=ghcr.io/joerncodes/edgewise:latest   # or pin :v0.1.0
 ```
 
 Notes:
-- `NEXTAUTH_URL` should be the public URL when behind a reverse proxy. The
+- `AUTH_URL` should be the public URL when behind a reverse proxy. The
   app sets `AUTH_TRUST_HOST=true` so it accepts the proxied host header.
+  (Auth.js v5 renamed the env var from `NEXTAUTH_URL` — both are read but
+  `AUTH_URL` is canonical.)
 - `/data` is declared as a `VOLUME` so Docker won't lose it on container
   recreation, but you should bind-mount it to a host path for backups.
 

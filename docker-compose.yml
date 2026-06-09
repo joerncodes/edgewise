@@ -1,7 +1,6 @@
 services:
   edgewise:
     image: ${EDGEWISE_IMAGE:-ghcr.io/joerncodes/edgewise:latest}
-    build: .
     container_name: edgewise
     restart: unless-stopped
     ports:
@@ -12,6 +11,6 @@ services:
       API_TOKEN: ${API_TOKEN:?set API_TOKEN in .env or Portainer stack env}
       AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET (openssl rand -base64 32)}
       AUTH_TRUST_HOST: "true"
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-}
+      AUTH_URL: ${AUTH_URL:-}
     volumes:
       - ${EDGEWISE_DATA:-./data}:/data

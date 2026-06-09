@@ -94,7 +94,7 @@ Multi-stage Dockerfile, `output: "standalone"`, runs as non-root, binds
 `docs/deployment.md`.
 
 The app does not terminate TLS or run health probes; put it behind a reverse
-proxy. `NEXTAUTH_URL` must be set to the public URL in production.
+proxy. `AUTH_URL` must be set to the public URL in production.
 
 ## Conventions worth knowing
 
