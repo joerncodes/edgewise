@@ -70,7 +70,7 @@ curl -s -X POST $BASE/api/knives \\
 curl -s -X POST $BASE/api/knives/wusthof-chef-8/sessions \\
   -H "Authorization: Bearer $TOKEN" \\
   -H 'Content-Type: application/json' \\
-  -d '{"date":"2026-06-09","angle":18,"notes":"Touch-up on 4000"}'
+  -d '{"date":"2026-06-09","angle":18,"notes":"Touch-up on 4000","rating":4.5}'
 
 # Upload an image (multipart)
 curl -s -X POST $BASE/api/knives/wusthof-chef-8/images \\

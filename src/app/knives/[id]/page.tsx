@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { KnifeImage } from "@/components/knife-image";
 import { PropertyList, PropertyRow } from "@/components/property-row";
+import { Stars } from "@/components/stars";
 import { api } from "@/lib/api-client";
 import { slugify } from "@/lib/storage/ids";
 import type { Knife, Owner } from "@/lib/storage/types";
@@ -179,8 +180,11 @@ export default function KnifeDetailPage() {
                 <div className="text-xs uppercase tracking-wider text-muted-foreground font-mono">
                   {formatDate(s.date)}
                 </div>
-                <div className="mt-0.5 text-2xl font-semibold tracking-tight font-mono">
-                  {s.angle}°
+                <div className="mt-0.5 flex items-center gap-3">
+                  <span className="text-2xl font-semibold tracking-tight font-mono">
+                    {s.angle}°
+                  </span>
+                  {s.rating !== undefined && <Stars value={s.rating} size="md" />}
                 </div>
                 {s.notes && (
                   <p className="mt-1 text-sm text-muted-foreground">{s.notes}</p>

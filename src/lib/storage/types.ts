@@ -4,6 +4,7 @@ export const SharpeningSessionSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "date must be YYYY-MM-DD"),
   angle: z.number().positive().max(45),
   notes: z.string().optional().default(""),
+  rating: z.number().min(1).max(5).optional(),
 });
 export type SharpeningSession = z.infer<typeof SharpeningSessionSchema>;
 

@@ -91,6 +91,11 @@ Fields:
 | `date`   | string | yes      | `YYYY-MM-DD`                       |
 | `angle`  | number | yes      | degrees per side, 1–45             |
 | `notes`  | string | no       | what was done that day             |
+| `rating` | number | no       | subjective 1–5, free precision     |
+
+`rating` is the owner's gut feel for how the session went. Free-precision
+float in `[1, 5]` (e.g. `2.6`, `4.8`). The UI rounds to the nearest half
+step for display (stars), but the on-disk value stays exact.
 
 ### Image
 

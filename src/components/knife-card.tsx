@@ -4,6 +4,7 @@ import { ChevronDown, ChevronRight, Factory, Tags, User } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { KnifeImage } from "@/components/knife-image";
+import { Stars } from "@/components/stars";
 import { api } from "@/lib/api-client";
 import { slugify } from "@/lib/storage/ids";
 import { cn } from "@/lib/utils";
@@ -128,12 +129,18 @@ export function KnifeCard({
           )}
         </div>
 
-        <div className="text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
           {last ? (
             <>
               <span className="font-mono">{formatDate(last.date)}</span>
-              <span className="mx-1.5">·</span>
+              <span>·</span>
               <span>{ago(last.date, now)}</span>
+              {last.rating !== undefined && (
+                <>
+                  <span>·</span>
+                  <Stars value={last.rating} />
+                </>
+              )}
             </>
           ) : (
             <span>Never sharpened</span>
@@ -172,7 +179,10 @@ export function KnifeCard({
                 <li key={i} className="space-y-0.5">
                   <div className="flex items-baseline justify-between gap-2 font-mono">
                     <span className="text-muted-foreground">{formatDate(s.date)}</span>
-                    <span className="text-foreground">{s.angle}°</span>
+                    <span className="flex items-center gap-2 text-foreground">
+                      {s.rating !== undefined && <Stars value={s.rating} />}
+                      <span>{s.angle}°</span>
+                    </span>
                   </div>
                   {s.notes && (
                     <p className="leading-snug text-muted-foreground">{s.notes}</p>

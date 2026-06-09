@@ -94,9 +94,10 @@ KnifeInput = {
 }
 
 Session = {
-  date: string   // YYYY-MM-DD
-  angle: number  // 1..45
+  date: string    // YYYY-MM-DD
+  angle: number   // 1..45 per side
   notes?: string
+  rating?: number // subjective 1..5, free precision
 }
 
 OwnerInput = {
