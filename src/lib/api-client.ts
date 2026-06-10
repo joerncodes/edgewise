@@ -1,4 +1,5 @@
 import type { Diary } from "./diary";
+import type { Facets } from "./facets";
 import type { Janitor } from "./janitor";
 import type { Stats } from "./stats";
 import type { Knife, Owner, SharpeningSession, Steel, Stone } from "./storage/types";
@@ -98,6 +99,7 @@ export const api = {
   getStats: () => request<Stats>("/api/stats"),
   getDiary: () => request<Diary>("/api/diary"),
   getJanitor: () => request<Janitor>("/api/janitor"),
+  getFacets: () => request<Facets>("/api/facets"),
 
   reorderBacklog: (ids: string[]) =>
     request<{ updated: number }>("/api/backlog/reorder", {

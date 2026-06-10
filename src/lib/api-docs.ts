@@ -69,6 +69,7 @@ const ENDPOINTS = `\
 | GET    | \`/api/stats\`                          | —                  | aggregate stats (see below) |
 | GET    | \`/api/diary\`                          | —                  | chronological session log (see below) |
 | GET    | \`/api/janitor\`                        | \`?staleAfterDays\`  | knives missing fields (see below) |
+| GET    | \`/api/facets\`                         | —                  | distinct categorical values + counts (see below) |
 | GET    | \`/api/docs\`                           | —                  | this document (markdown) |
 | GET    | \`/llms.txt\`                           | —                  | this document, unauth    |`;
 
@@ -128,6 +129,9 @@ curl -s $BASE/api/diary -H "Authorization: Bearer $TOKEN" | jq
 
 # Janitor — knives missing fields (no photo, no steel, etc.) for backfill
 curl -s $BASE/api/janitor -H "Authorization: Bearer $TOKEN" | jq
+
+# Facets — distinct values + counts for every categorical attribute
+curl -s $BASE/api/facets -H "Authorization: Bearer $TOKEN" | jq
 \`\`\`
 
 ## Diary
@@ -182,6 +186,28 @@ type KnifeRef = { id: string; name: string; ownerId: string; ownerName: string }
 
 The matching UI is \`/janitor\` (also linked from the footer of
 \`/stats\`).
+
+## Facets
+
+\`GET /api/facets\` returns the distinct, non-empty values used across
+the knife corpus for every categorical attribute, with a per-value
+count. Same data the homepage / \`/backlog\` filter sidebars derive
+client-side — exposing it as an endpoint lets external clients
+populate filter dropdowns without pulling the whole knife list.
+
+Sort is \`count\` desc, then \`value\` asc, stable across calls. Empty
+strings and missing fields are excluded — facets are for picking
+something that exists, not for "no value set". \`owners\` are owner
+IDs (foreign keys); hit \`/api/owners\` to resolve display names.
+
+\`\`\`ts
+type Facets = {
+  manufacturers: { value: string; count: number }[];
+  steels:        { value: string; count: number }[];
+  types:         { value: string; count: number }[];
+  owners:        { value: string; count: number }[];
+};
+\`\`\`
 
 ## Stones
 

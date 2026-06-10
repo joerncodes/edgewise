@@ -1,6 +1,6 @@
 ---
 filetype: todo
-status: open
+status: done
 ---
 
 # `GET /api/facets` — distinct values for list-able knife attributes
