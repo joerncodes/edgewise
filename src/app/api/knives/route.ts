@@ -1,5 +1,6 @@
 import { ZodError } from "zod";
 import { getStorage, slugify, KnifeInputSchema, type Knife } from "@/lib/storage";
+import { nextBacklogPosition } from "@/lib/backlog";
 import { badRequest, conflict, fromZod, json, nowIso, serverError } from "@/lib/http";
 
 export async function GET() {
@@ -24,6 +25,14 @@ export async function POST(req: Request) {
       return conflict(`knife already exists: ${id}`);
     }
     const now = nowIso();
+    const backlog = input.backlog ?? false;
+    let backlogPosition: number | undefined = backlog
+      ? input.backlogPosition
+      : undefined;
+    if (backlog && backlogPosition === undefined) {
+      // Auto-append at the end of the queue. See backlog-manual-order.md.
+      backlogPosition = nextBacklogPosition(await storage.listKnives());
+    }
     const knife: Knife = {
       id,
       name: input.name,
@@ -32,7 +41,8 @@ export async function POST(req: Request) {
       steel: input.steel ?? "",
       type: input.type ?? "",
       notes: input.notes ?? "",
-      backlog: input.backlog ?? false,
+      backlog,
+      backlogPosition,
       sessions: input.sessions ?? [],
       images: [],
       createdAt: now,

@@ -1,9 +1,29 @@
 ---
 filetype: todo
-status: open
+status: done
+completedOn: 2026-06-10
 ---
 
 # Manual ordering of the backlog
+
+> **Done.** Implemented 2026-06-10. Optional `backlogPosition?: number`
+> on `Knife` (`src/lib/storage/types.ts`). `/backlog` defaults to a
+> "Manual order" sort with `@dnd-kit`-powered drag-and-drop on the
+> card grid; the drop handler posts `{ ids }` to
+> `POST /api/backlog/reorder`, which rewrites positions as `1, 2, 3, …`.
+> Optimistic local update + revert + toast on failure. The grip handle
+> is hidden in oldest/newest/owner sorts and while a search/owner
+> filter is active (the visual order would no longer match storage).
+> Flagging a knife into the backlog auto-appends it at the end via
+> `nextBacklogPosition` (used by both `POST /api/knives` and
+> `PATCH /api/knives/{id}`); knives with `backlog: true` and no
+> position are auto-appended on read by `sortByPosition` in
+> `src/lib/backlog.ts`. The session-add handler and the PATCH handler
+> both clear `backlogPosition` whenever `backlog` clears.
+> `PATCH /api/knives/{id}` accepts `backlogPosition: number | null`
+> (null clears explicitly). `docs/data-model.md` and `docs/api.md`
+> updated. ADR-0006 still holds — the drop fires another API call,
+> not a Server Action.
 
 The current `/backlog` page has computed sorts (oldest first, newest
 first, owner A–Z) — useful, but not the *actual* queue order. When

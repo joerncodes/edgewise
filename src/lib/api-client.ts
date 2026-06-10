@@ -76,4 +76,10 @@ export const api = {
   getStats: () => request<Stats>("/api/stats"),
   getDiary: () => request<Diary>("/api/diary"),
   getJanitor: () => request<Janitor>("/api/janitor"),
+
+  reorderBacklog: (ids: string[]) =>
+    request<{ updated: number }>("/api/backlog/reorder", {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    }),
 };

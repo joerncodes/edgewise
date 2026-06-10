@@ -83,6 +83,7 @@ Fields:
 | `type`         | string    | no       | chef, paring, santoku, pocket…     |
 | `notes`        | string    | no       | the markdown body                  |
 | `backlog`      | boolean   | no       | true while waiting to be sharpened |
+| `backlogPosition` | number | no       | manual queue position (1, 2, 3, …) |
 | `sessions`     | Session[] | no       | per-sharpening events, oldest→new  |
 | `createdAt`    | ISO       | yes      |                                    |
 | `updatedAt`    | ISO       | yes      |                                    |
@@ -92,6 +93,14 @@ when the knife is dropped off, and the `/backlog` page will surface it.
 Adding a session via `POST /api/knives/{id}/sessions` clears the flag
 automatically — sharpening obviously means it's no longer waiting. Absent
 or `false` means "not in the backlog".
+
+`backlogPosition` is the manual queue order on `/backlog`. Flagging a
+knife into the backlog auto-appends it (position = max + 1); the
+drag-and-drop UI rewrites positions as `1, 2, 3, …` via
+`POST /api/backlog/reorder`. Clearing `backlog` (manually or via the
+first session) also clears `backlogPosition`. A knife with
+`backlog: true` and no `backlogPosition` renders at the end of the
+manual view, sorted by `createdAt` — no special-case migration needed.
 
 ### Session
 

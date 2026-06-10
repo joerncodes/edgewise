@@ -44,6 +44,22 @@ with status `401`.
 | GET    | `/api/knives/{id}/images/{filename}` | —            | image bytes              |
 | DELETE | `/api/knives/{id}/images/{filename}` | —            | `{ knife }`              |
 
+`PATCH /api/knives/{id}` accepts `backlogPosition: number | null` to set
+or clear the manual queue position. `null` clears it explicitly. Flagging
+a knife into the backlog without a position auto-appends it (max + 1);
+clearing `backlog` (manually or via a session) clears the position too.
+
+### Backlog
+
+| Method | Path                      | Body              | Returns           |
+|--------|---------------------------|-------------------|-------------------|
+| POST   | `/api/backlog/reorder`    | `{ ids: string[] }` | `{ updated: number }` |
+
+Rewrites `backlogPosition` for the given IDs as `1, 2, 3, …` in order.
+Every ID must be a knife with `backlog: true`; duplicates are rejected.
+This is the endpoint the drag-and-drop UI fires on drop, but it's plain
+enough to call from curl too.
+
 ### Owners
 
 | Method | Path                | Body          | Returns                |
