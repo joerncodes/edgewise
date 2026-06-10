@@ -2,7 +2,7 @@ import type { Diary } from "./diary";
 import type { Facets } from "./facets";
 import type { Janitor } from "./janitor";
 import type { Stats } from "./stats";
-import type { Knife, Owner, SharpeningSession, Steel, Stone } from "./storage/types";
+import type { Abrasive, Knife, Owner, SharpeningSession, Steel } from "./storage/types";
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
@@ -74,27 +74,31 @@ export const api = {
     }).then((r) => r.steel),
   deleteSteel: (id: string) => request<void>(`/api/steels/${id}`, { method: "DELETE" }),
 
-  listStones: () => request<{ stones: Stone[] }>("/api/stones").then((r) => r.stones),
-  getStone: (id: string) => request<{ stone: Stone }>(`/api/stones/${id}`).then((r) => r.stone),
-  createStone: (body: Partial<Stone>) =>
-    request<{ stone: Stone }>("/api/stones", { method: "POST", body: JSON.stringify(body) }).then(
-      (r) => r.stone,
-    ),
-  updateStone: (id: string, body: Partial<Stone>) =>
-    request<{ stone: Stone }>(`/api/stones/${id}`, {
+  listAbrasives: () =>
+    request<{ abrasives: Abrasive[] }>("/api/abrasives").then((r) => r.abrasives),
+  getAbrasive: (id: string) =>
+    request<{ abrasive: Abrasive }>(`/api/abrasives/${id}`).then((r) => r.abrasive),
+  createAbrasive: (body: Partial<Abrasive>) =>
+    request<{ abrasive: Abrasive }>("/api/abrasives", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }).then((r) => r.abrasive),
+  updateAbrasive: (id: string, body: Partial<Abrasive>) =>
+    request<{ abrasive: Abrasive }>(`/api/abrasives/${id}`, {
       method: "PATCH",
       body: JSON.stringify(body),
-    }).then((r) => r.stone),
-  deleteStone: (id: string) => request<void>(`/api/stones/${id}`, { method: "DELETE" }),
-  stoneImageUrl: (stoneId: string, filename: string, size?: "thumb") =>
-    `/api/stones/${encodeURIComponent(stoneId)}/images/${encodeURIComponent(filename)}${
+    }).then((r) => r.abrasive),
+  deleteAbrasive: (id: string) =>
+    request<void>(`/api/abrasives/${id}`, { method: "DELETE" }),
+  abrasiveImageUrl: (abrasiveId: string, filename: string, size?: "thumb") =>
+    `/api/abrasives/${encodeURIComponent(abrasiveId)}/images/${encodeURIComponent(filename)}${
       size === "thumb" ? "?size=thumb" : ""
     }`,
-  deleteStoneImage: (stoneId: string, filename: string) =>
-    request<{ stone: Stone }>(
-      `/api/stones/${stoneId}/images/${encodeURIComponent(filename)}`,
+  deleteAbrasiveImage: (abrasiveId: string, filename: string) =>
+    request<{ abrasive: Abrasive }>(
+      `/api/abrasives/${abrasiveId}/images/${encodeURIComponent(filename)}`,
       { method: "DELETE" },
-    ).then((r) => r.stone),
+    ).then((r) => r.abrasive),
 
   getStats: () => request<Stats>("/api/stats"),
   getDiary: () => request<Diary>("/api/diary"),

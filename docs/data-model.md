@@ -11,13 +11,13 @@ $DATA_DIR/
     <slug>.md
   steels/
     <slug>.md
-  stones/
+  abrasives/
     <slug>.md
   images/
     <knife-id>/
       <filename>
-  stone-images/
-    <stone-id>/
+  abrasive-images/
+    <abrasive-id>/
       <filename>
 ```
 
@@ -115,17 +115,19 @@ manual view, sorted by `createdAt` — no special-case migration needed.
 | `angle`  | number   | yes      | degrees per side, 1–45               |
 | `notes`  | string   | no       | what was done that day               |
 | `rating` | number   | no       | subjective 1–5, free precision       |
-| `stones` | string[] | no       | `Stone.id`s in coarse → fine order   |
+| `abrasives` | string[] | no    | `Abrasive.id`s in coarse → fine order |
 
 `rating` is the owner's gut feel for how the session went. Free-precision
 float in `[1, 5]` (e.g. `2.6`, `4.8`). The UI rounds to the nearest half
 step for display (stars), but the on-disk value stays exact.
 
-`stones` is the grit progression for the session — array order is
-meaningful (`["shapton-400", "shapton-1000", "shapton-5000"]`) and is
-never sorted on read or write. Pre-existing sessions have no `stones`
-field and that stays valid. `POST /api/knives/{id}/sessions` rejects
-sessions referencing an unknown stone ID with `400`.
+`abrasives` is the progression for the session — array order is
+meaningful (`["shapton-400", "shapton-1000", "shapton-5000",
+"kangaroo-strop"]`) and is never sorted on read or write. Pre-existing
+sessions have no `abrasives` field and that stays valid. The array
+covers stones, strops, and anything else recorded as an Abrasive (see
+the Abrasive section below). `POST /api/knives/{id}/sessions` rejects
+sessions referencing an unknown abrasive ID with `400`.
 
 ### Image
 
@@ -141,7 +143,7 @@ shared `ImageRef` shape; bytes live under
 | `addedAt`  | ISO    | yes      | server-set on upload                   |
 
 Order in the array matters: the first entry is the "cover". The same
-`ImageRef` shape is reused by Stone — see the Stone section below.
+`ImageRef` shape is reused by Abrasive — see the Abrasive section below.
 
 Supported MIME types: `image/jpeg`, `image/png`, `image/webp`. Max upload
 size: 10 MB.
@@ -210,13 +212,13 @@ Slug canonicalisation: steel names are weird (`80CrV2`, `80Crv2`,
 string. Two knives whose `steel` strings slugify to the same value
 are considered the same steel.
 
-## Stone
+## Abrasive
 
-`stones/<id>.md`:
+`abrasives/<id>.md`:
 
 ```yaml
 ---
-id: shapton-pro-1000
+id: shapton-pro-1000-1000
 name: Shapton Pro 1000
 grit: 1000
 type: waterstone
@@ -228,31 +230,58 @@ Splash-and-go, no soak. Dishes faster than the 2000 — flatten roughly
 every 20 sessions.
 ```
 
+A strop is the same shape, with `type: "strop"` and the strop-specific
+fields populated:
+
+```yaml
+---
+id: kangaroo-strop-60000
+name: Kangaroo strop
+grit: 60000
+type: strop
+compound: chromium oxide 0.5 µm
+substrate: kangaroo leather
+createdAt: 2026-06-10T12:00:00.000Z
+updatedAt: 2026-06-10T12:00:00.000Z
+---
+```
+
+Abrasive covers stones, strops, and anything else you push an edge
+across to refine it. `type` discriminates. See [[strops]] for the
+rationale behind one entity rather than parallel `Stone` / `Strop`
+tables.
+
 Fields:
 
 | field       | type   | required | notes                                    |
 |-------------|--------|----------|------------------------------------------|
 | `id`        | string | yes      | slug, file name without `.md`            |
-| `name`      | string | yes      | free-form (`Shapton Pro 1000`, `King 1000`) |
-| `grit`      | number | yes      | the defining property; unitless          |
+| `name`      | string | yes      | free-form (`Shapton Pro 1000`, `Kangaroo strop`) |
+| `grit`      | number | yes      | the defining property; unitless. For a strop, the *effective* grit of the compound. |
 | `type`      | string | no       | `waterstone`, `diamond plate`, `ceramic`, `strop` |
-| `notes`     | string | no       | the markdown body — soak time, flattening reminders |
+| `compound`  | string | no       | strop-specific. `chromium oxide 0.5 µm`, `diamond paste 1 µm`, etc. |
+| `substrate` | string | no       | strop-specific. `leather`, `balsa`, `denim`, `MDF`. |
+| `notes`     | string | no       | the markdown body — soak time, flattening reminders, dishing observations |
 | `images`    | ImageRef[] | no   | metadata for 0..n images; same shape as knives |
 | `createdAt` | ISO    | yes      |                                          |
 | `updatedAt` | ISO    | yes      |                                          |
 
 `grit` is a bare number — no scale qualifier. JIS is the default; pick
-a scale and stick with it across the corpus. Sessions link to stones
-by `id` (see `session.stones` above).
+a scale and stick with it across the corpus. For strops the number
+represents the *compound's* effective grit (chromium oxide ≈ 60000),
+so the array ordering stays consistent end-to-end. Sessions link to
+abrasives by `id` (see `session.abrasives` above).
 
-Stone image bytes live under `$DATA_DIR/stone-images/<stone-id>/<filename>`
-— a separate root from knife images so cleanup on stone delete can
-just `rm -rf` the directory. Same upload pattern as knives
-(`POST /api/stones/{id}/images` multipart, `GET … ?size=thumb` for the
-cache-on-miss thumbnail), but the thumbnail is a 400×400 square cover
-rather than a 3:1 banner — stones are roughly square objects, so a
-banner crop loses the part you care about. Deleting a stone removes
-the matching `stone-images/<stone-id>/` directory too.
+Abrasive image bytes live under
+`$DATA_DIR/abrasive-images/<abrasive-id>/<filename>` — a separate
+root from knife images so cleanup on abrasive delete can just
+`rm -rf` the directory. Same upload pattern as knives
+(`POST /api/abrasives/{id}/images` multipart, `GET … ?size=thumb`
+for the cache-on-miss thumbnail), but the thumbnail is a 400×400
+square cover rather than a 3:1 banner — abrasives are roughly square
+objects, so a banner crop loses the part you care about. Deleting
+an abrasive removes the matching `abrasive-images/<abrasive-id>/`
+directory too.
 
 The `images:` array uses the shared `ImageRef` shape:
 
@@ -263,8 +292,8 @@ The `images:` array uses the shared `ImageRef` shape:
 | `addedAt`  | ISO    | yes      | server-set on upload                   |
 
 Same shape as the knife `images:` array. Order matters: the first
-entry is the "cover" rendered as the row thumbnail on `/stones` and
-the hero on `/stones/<id>`.
+entry is the "cover" rendered as the row thumbnail on `/abrasives`
+and the hero on `/abrasives/<id>`.
 
 ## Referential integrity
 
@@ -273,8 +302,8 @@ the hero on `/stones/<id>`.
   knives first.
 - Deleting a steel that any knife references returns `409`. Change or
   clear the knife's `steel` field first.
-- A session's `stones[]` are foreign keys: `POST /api/knives/{id}/sessions`
-  rejects unknown stone IDs with `400`. Deleting a stone that any
+- A session's `abrasives[]` are foreign keys: `POST /api/knives/{id}/sessions`
+  rejects unknown abrasive IDs with `400`. Deleting an abrasive that any
   session still references returns `409` — remove or rewrite those
   sessions first.
 

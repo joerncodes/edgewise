@@ -5,10 +5,11 @@ export const SharpeningSessionSchema = z.object({
   angle: z.number().positive().max(45),
   notes: z.string().optional().default(""),
   rating: z.number().min(1).max(5).optional(),
-  // Stone IDs used in this session, in progression order
-  // (coarse → fine: 400 → 1000 → 5000). Array order is preserved
-  // and meaningful — don't sort it.
-  stones: z.array(z.string().min(1)).optional(),
+  // Abrasive IDs used in this session, in progression order
+  // (coarse → fine: 400 → 1000 → 5000 → strop). Array order is
+  // preserved and meaningful — don't sort it. Covers both stones
+  // and strops; see docs/todos/strops.md.
+  abrasives: z.array(z.string().min(1)).optional(),
 });
 export type SharpeningSession = z.infer<typeof SharpeningSessionSchema>;
 
@@ -106,26 +107,33 @@ export const SteelInputSchema = SteelSchema.omit({
 });
 export type SteelInput = z.infer<typeof SteelInputSchema>;
 
-export const StoneSchema = z.object({
+// Abrasive covers stones, strops, and anything else you push an edge
+// against to refine it. `type` discriminates ("waterstone", "diamond
+// plate", "ceramic", "strop"). `compound` and `substrate` are
+// strop-specific but optional everywhere so a stone record can leave
+// them blank.
+export const AbrasiveSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   grit: z.number().positive(),
   type: z.string().optional().default(""),
+  compound: z.string().optional().default(""),
+  substrate: z.string().optional().default(""),
   notes: z.string().optional().default(""),
   images: z.array(ImageRefSchema).default([]),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
-export type Stone = z.infer<typeof StoneSchema>;
+export type Abrasive = z.infer<typeof AbrasiveSchema>;
 
-export const StoneInputSchema = StoneSchema.omit({
+export const AbrasiveInputSchema = AbrasiveSchema.omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 }).extend({
   id: z.string().optional(),
 });
-export type StoneInput = z.infer<typeof StoneInputSchema>;
+export type AbrasiveInput = z.infer<typeof AbrasiveInputSchema>;
 
 export interface ImageBlob {
   bytes: Buffer;
@@ -163,21 +171,21 @@ export interface Storage {
   saveSteel(steel: Steel): Promise<void>;
   deleteSteel(id: string): Promise<boolean>;
 
-  listStones(): Promise<Stone[]>;
-  getStone(id: string): Promise<Stone | null>;
-  saveStone(stone: Stone): Promise<void>;
-  deleteStone(id: string): Promise<boolean>;
+  listAbrasives(): Promise<Abrasive[]>;
+  getAbrasive(id: string): Promise<Abrasive | null>;
+  saveAbrasive(abrasive: Abrasive): Promise<void>;
+  deleteAbrasive(id: string): Promise<boolean>;
 
-  saveStoneImage(
-    stoneId: string,
+  saveAbrasiveImage(
+    abrasiveId: string,
     filename: string,
     contentType: ImageMimeType,
     bytes: Buffer,
   ): Promise<void>;
-  readStoneImage(
-    stoneId: string,
+  readAbrasiveImage(
+    abrasiveId: string,
     filename: string,
     size?: ImageSize,
   ): Promise<ImageBlob | null>;
-  deleteStoneImage(stoneId: string, filename: string): Promise<boolean>;
+  deleteAbrasiveImage(abrasiveId: string, filename: string): Promise<boolean>;
 }

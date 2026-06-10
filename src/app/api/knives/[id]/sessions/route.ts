@@ -15,13 +15,13 @@ export async function POST(req: Request, { params }: Ctx) {
     const knife = await storage.getKnife(id);
     if (!knife) return notFound("knife not found");
 
-    if (session.stones?.length) {
+    if (session.abrasives?.length) {
       const missing: string[] = [];
-      for (const stoneId of session.stones) {
-        if (!(await storage.getStone(stoneId))) missing.push(stoneId);
+      for (const abrasiveId of session.abrasives) {
+        if (!(await storage.getAbrasive(abrasiveId))) missing.push(abrasiveId);
       }
       if (missing.length > 0) {
-        return badRequest(`stone(s) not found: ${missing.join(", ")}`);
+        return badRequest(`abrasive(s) not found: ${missing.join(", ")}`);
       }
     }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Atom, Factory, Inbox, Layers, PocketKnife, Tags, User } from "lucide-react";
+import { ArrowLeft, Atom, Factory, Gem, Inbox, PocketKnife, Tags, User } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -12,7 +12,8 @@ import { Stars } from "@/components/stars";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api-client";
 import { slugify } from "@/lib/storage/ids";
-import type { Knife, Owner, Stone } from "@/lib/storage/types";
+import { isStrop } from "@/lib/abrasives";
+import type { Abrasive, Knife, Owner } from "@/lib/storage/types";
 
 const dateFmt = new Intl.DateTimeFormat("de-DE", { dateStyle: "short" });
 
@@ -26,13 +27,13 @@ export default function KnifeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [knife, setKnife] = useState<Knife | null>(null);
   const [owner, setOwner] = useState<Owner | null>(null);
-  const [stones, setStones] = useState<Stone[]>([]);
+  const [abrasives, setAbrasives] = useState<Abrasive[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
 
-  const stoneById = useMemo(
-    () => Object.fromEntries(stones.map((s) => [s.id, s])),
-    [stones],
+  const abrasiveById = useMemo(
+    () => Object.fromEntries(abrasives.map((a) => [a.id, a])),
+    [abrasives],
   );
 
   async function toggleBacklog() {
@@ -57,7 +58,7 @@ export default function KnifeDetailPage() {
       .getKnife(id)
       .then(async (k) => {
         setKnife(k);
-        const hasStones = k.sessions.some((s) => s.stones?.length);
+        const hasAbrasives = k.sessions.some((s) => s.abrasives?.length);
         const tasks: Promise<unknown>[] = [];
         if (k.ownerId) {
           tasks.push(
@@ -69,8 +70,8 @@ export default function KnifeDetailPage() {
               }),
           );
         }
-        if (hasStones) {
-          tasks.push(api.listStones().then(setStones).catch(() => {}));
+        if (hasAbrasives) {
+          tasks.push(api.listAbrasives().then(setAbrasives).catch(() => {}));
         }
         await Promise.all(tasks);
       })
@@ -252,8 +253,8 @@ export default function KnifeDetailPage() {
                   </span>
                   {s.rating !== undefined && <Stars value={s.rating} size="md" />}
                 </div>
-                {s.stones?.length ? (
-                  <SessionStones stones={s.stones} stoneById={stoneById} />
+                {s.abrasives?.length ? (
+                  <SessionAbrasives abrasives={s.abrasives} abrasiveById={abrasiveById} />
                 ) : null}
                 {s.notes && (
                   <p className="mt-1 text-sm text-muted-foreground">{s.notes}</p>
@@ -282,35 +283,38 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SessionStones({
-  stones,
-  stoneById,
+function SessionAbrasives({
+  abrasives,
+  abrasiveById,
 }: {
-  stones: string[];
-  stoneById: Record<string, Stone>;
+  abrasives: string[];
+  abrasiveById: Record<string, Abrasive>;
 }) {
   return (
-    <div className="mt-1 flex flex-wrap items-center gap-1 text-xs">
-      <Layers className="h-3 w-3 shrink-0 text-muted-foreground/60" />
-      {stones.map((sid, i) => {
-        const s = stoneById[sid];
+    <div
+      className="mt-1 flex flex-wrap items-center gap-1 text-xs"
+      title="Abrasive progression"
+    >
+      <Gem className="h-3 w-3 shrink-0 text-muted-foreground/60" />
+      {abrasives.map((aid, i) => {
+        const a = abrasiveById[aid];
         return (
-          <span key={`${sid}-${i}`} className="inline-flex items-center gap-1">
+          <span key={`${aid}-${i}`} className="inline-flex items-center gap-1">
             {i > 0 && <span className="text-muted-foreground/40">→</span>}
-            {s ? (
+            {a ? (
               <Link
-                href={`/stones/${sid}`}
+                href={`/abrasives/${aid}`}
                 className="inline-flex items-center rounded-md border border-border px-1.5 py-0.5 font-mono text-muted-foreground hover:text-foreground hover:underline"
-                title={s.name}
+                title={a.name}
               >
-                {s.grit}
+                {isStrop(a) ? a.compound.trim() || "STROP" : a.grit}
               </Link>
             ) : (
               <span
                 className="inline-flex items-center rounded-md border border-border px-1.5 py-0.5 font-mono text-muted-foreground/60 line-through"
-                title="Unknown stone"
+                title="Unknown abrasive"
               >
-                {sid}
+                {aid}
               </span>
             )}
           </span>

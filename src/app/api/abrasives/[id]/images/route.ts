@@ -13,8 +13,8 @@ export async function POST(req: Request, { params }: Ctx) {
   try {
     const { id } = await params;
     const storage = getStorage();
-    const stone = await storage.getStone(id);
-    if (!stone) return notFound("stone not found");
+    const abrasive = await storage.getAbrasive(id);
+    if (!abrasive) return notFound("abrasive not found");
 
     const form = await req.formData().catch(() => null);
     if (!form) return badRequest("expected multipart/form-data");
@@ -40,7 +40,7 @@ export async function POST(req: Request, { params }: Ctx) {
     }
     let unique = filename;
     let n = 1;
-    while (stone.images.some((img) => img.filename === unique)) {
+    while (abrasive.images.some((img) => img.filename === unique)) {
       const dot = filename.lastIndexOf(".");
       unique =
         dot > 0
@@ -50,18 +50,18 @@ export async function POST(req: Request, { params }: Ctx) {
     }
 
     const bytes = Buffer.from(await file.arrayBuffer());
-    await storage.saveStoneImage(id, unique, contentType, bytes);
+    await storage.saveAbrasiveImage(id, unique, contentType, bytes);
 
     const updated = {
-      ...stone,
+      ...abrasive,
       images: [
-        ...stone.images,
+        ...abrasive.images,
         { filename: unique, caption, addedAt: nowIso() },
       ],
       updatedAt: nowIso(),
     };
-    await storage.saveStone(updated);
-    return json({ stone: updated }, { status: 201 });
+    await storage.saveAbrasive(updated);
+    return json({ abrasive: updated }, { status: 201 });
   } catch (err) {
     return serverError(err);
   }

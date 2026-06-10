@@ -4,29 +4,29 @@ import matter from "gray-matter";
 import sharp from "sharp";
 import YAML from "yaml";
 import {
+  AbrasiveSchema,
   KnifeSchema,
   OwnerSchema,
   SteelSchema,
-  StoneSchema,
   mimeFromFilename,
+  type Abrasive,
   type ImageMimeType,
   type ImageSize,
   type Knife,
   type ImageBlob,
   type Owner,
   type Steel,
-  type Stone,
   type Storage,
 } from "./types";
 
-// Thumbnails are always JPEG. Knife covers use a 3:1 banner; stones
-// use a square. See docs/todos/thumbnails.md.
+// Thumbnails are always JPEG. Knife covers use a 3:1 banner;
+// abrasives use a square. See docs/todos/thumbnails.md.
 const THUMB_QUALITY = 80;
 const THUMB_EXT = "jpg";
 const THUMB_MIME: ImageMimeType = "image/jpeg";
 
 const KNIFE_THUMB = { width: 600, height: 200 };
-const STONE_THUMB = { width: 400, height: 400 };
+const ABRASIVE_THUMB = { width: 400, height: 400 };
 
 export function thumbFilename(filename: string): string {
   const dot = filename.lastIndexOf(".");
@@ -74,27 +74,27 @@ export class MarkdownStorage implements Storage {
   private knivesDir: string;
   private ownersDir: string;
   private steelsDir: string;
-  private stonesDir: string;
+  private abrasivesDir: string;
   private imagesDir: string;
-  private stoneImagesDir: string;
+  private abrasiveImagesDir: string;
 
   constructor(opts: MarkdownStorageOptions) {
     this.dataDir = opts.dataDir;
     this.knivesDir = path.join(this.dataDir, "knives");
     this.ownersDir = path.join(this.dataDir, "owners");
     this.steelsDir = path.join(this.dataDir, "steels");
-    this.stonesDir = path.join(this.dataDir, "stones");
+    this.abrasivesDir = path.join(this.dataDir, "abrasives");
     this.imagesDir = path.join(this.dataDir, "images");
-    this.stoneImagesDir = path.join(this.dataDir, "stone-images");
+    this.abrasiveImagesDir = path.join(this.dataDir, "abrasive-images");
   }
 
   private async ensureDirs() {
     await fs.mkdir(this.knivesDir, { recursive: true });
     await fs.mkdir(this.ownersDir, { recursive: true });
     await fs.mkdir(this.steelsDir, { recursive: true });
-    await fs.mkdir(this.stonesDir, { recursive: true });
+    await fs.mkdir(this.abrasivesDir, { recursive: true });
     await fs.mkdir(this.imagesDir, { recursive: true });
-    await fs.mkdir(this.stoneImagesDir, { recursive: true });
+    await fs.mkdir(this.abrasiveImagesDir, { recursive: true });
   }
 
   private knifePath(id: string) {
@@ -109,8 +109,8 @@ export class MarkdownStorage implements Storage {
     return path.join(this.steelsDir, `${id}.md`);
   }
 
-  private stonePath(id: string) {
-    return path.join(this.stonesDir, `${id}.md`);
+  private abrasivePath(id: string) {
+    return path.join(this.abrasivesDir, `${id}.md`);
   }
 
   private knifeImagesDir(id: string) {
@@ -125,16 +125,16 @@ export class MarkdownStorage implements Storage {
     return path.join(this.knifeImagesDir(id), safe);
   }
 
-  private stoneImagesDirFor(id: string) {
-    return path.join(this.stoneImagesDir, id);
+  private abrasiveImagesDirFor(id: string) {
+    return path.join(this.abrasiveImagesDir, id);
   }
 
-  private stoneImagePath(id: string, filename: string) {
+  private abrasiveImagePath(id: string, filename: string) {
     const safe = path.basename(filename);
     if (safe !== filename || safe.includes("..") || safe.startsWith(".")) {
       throw new Error(`invalid image filename: ${filename}`);
     }
-    return path.join(this.stoneImagesDirFor(id), safe);
+    return path.join(this.abrasiveImagesDirFor(id), safe);
   }
 
   private async readFileOrNull(p: string): Promise<string | null> {
@@ -386,85 +386,89 @@ export class MarkdownStorage implements Storage {
     }
   }
 
-  private parseStone(raw: string): Stone {
+  private parseAbrasive(raw: string): Abrasive {
     const parsed = matter(raw);
     const data = normalizeDates({
       ...parsed.data,
       notes: parsed.content.trim(),
     });
-    return StoneSchema.parse(data);
+    return AbrasiveSchema.parse(data);
   }
 
-  private serializeStone(stone: Stone): string {
-    const { notes, ...rest } = stone;
+  private serializeAbrasive(abrasive: Abrasive): string {
+    const { notes, ...rest } = abrasive;
     const fm = YAML.stringify(rest);
     return `---\n${fm}---\n\n${notes ?? ""}\n`;
   }
 
-  async listStones(): Promise<Stone[]> {
+  async listAbrasives(): Promise<Abrasive[]> {
     await this.ensureDirs();
-    const entries = await fs.readdir(this.stonesDir);
-    const stones = await Promise.all(
+    const entries = await fs.readdir(this.abrasivesDir);
+    const abrasives = await Promise.all(
       entries
         .filter((f) => f.endsWith(".md"))
         .map(async (f) => {
-          const raw = await fs.readFile(path.join(this.stonesDir, f), "utf8");
-          return this.parseStone(raw);
+          const raw = await fs.readFile(path.join(this.abrasivesDir, f), "utf8");
+          return this.parseAbrasive(raw);
         }),
     );
     // Sort coarse → fine; ties broken by name.
-    return stones.sort(
+    return abrasives.sort(
       (a, b) => a.grit - b.grit || a.name.localeCompare(b.name),
     );
   }
 
-  async getStone(id: string): Promise<Stone | null> {
+  async getAbrasive(id: string): Promise<Abrasive | null> {
     await this.ensureDirs();
-    const raw = await this.readFileOrNull(this.stonePath(id));
-    return raw ? this.parseStone(raw) : null;
+    const raw = await this.readFileOrNull(this.abrasivePath(id));
+    return raw ? this.parseAbrasive(raw) : null;
   }
 
-  async saveStone(stone: Stone): Promise<void> {
+  async saveAbrasive(abrasive: Abrasive): Promise<void> {
     await this.ensureDirs();
-    await fs.writeFile(this.stonePath(stone.id), this.serializeStone(stone), "utf8");
+    await fs.writeFile(
+      this.abrasivePath(abrasive.id),
+      this.serializeAbrasive(abrasive),
+      "utf8",
+    );
   }
 
-  async deleteStone(id: string): Promise<boolean> {
+  async deleteAbrasive(id: string): Promise<boolean> {
     let removedMd = false;
     try {
-      await fs.unlink(this.stonePath(id));
+      await fs.unlink(this.abrasivePath(id));
       removedMd = true;
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
     }
-    await fs.rm(this.stoneImagesDirFor(id), { recursive: true, force: true });
+    await fs.rm(this.abrasiveImagesDirFor(id), { recursive: true, force: true });
     return removedMd;
   }
 
-  async saveStoneImage(
-    stoneId: string,
+  async saveAbrasiveImage(
+    abrasiveId: string,
     filename: string,
     _contentType: ImageMimeType,
     bytes: Buffer,
   ): Promise<void> {
-    const target = this.stoneImagePath(stoneId, filename);
+    const target = this.abrasiveImagePath(abrasiveId, filename);
     await fs.mkdir(path.dirname(target), { recursive: true });
     await fs.writeFile(target, bytes);
 
     try {
-      const thumbBytes = await makeThumbnail(bytes, STONE_THUMB);
-      const thumbPath = this.stoneImagePath(stoneId, thumbFilename(filename));
+      const thumbBytes = await makeThumbnail(bytes, ABRASIVE_THUMB);
+      const thumbPath = this.abrasiveImagePath(abrasiveId, thumbFilename(filename));
       await fs.writeFile(thumbPath, thumbBytes);
     } catch (err) {
       console.warn(
-        `thumb generation failed for stone ${stoneId}/${filename}:`,
+        `thumb generation failed for abrasive ${abrasiveId}/${filename}:`,
         (err as Error).message,
       );
     }
   }
 
-  async readStoneImage(
-    stoneId: string,
+  async readAbrasiveImage(
+    abrasiveId: string,
     filename: string,
     size: ImageSize = "original",
   ): Promise<ImageBlob | null> {
@@ -472,7 +476,7 @@ export class MarkdownStorage implements Storage {
     if (!mime) return null;
 
     if (size === "thumb") {
-      const thumbPath = this.stoneImagePath(stoneId, thumbFilename(filename));
+      const thumbPath = this.abrasiveImagePath(abrasiveId, thumbFilename(filename));
       try {
         const cached = await fs.readFile(thumbPath);
         return { bytes: cached, contentType: THUMB_MIME };
@@ -481,7 +485,7 @@ export class MarkdownStorage implements Storage {
       }
       // Cache miss: regenerate from the original. Mirrors the knife
       // read-path (ADR-0011) — GETs may write the cache.
-      const originalPath = this.stoneImagePath(stoneId, filename);
+      const originalPath = this.abrasiveImagePath(abrasiveId, filename);
       let originalBytes: Buffer;
       try {
         originalBytes = await fs.readFile(originalPath);
@@ -490,12 +494,12 @@ export class MarkdownStorage implements Storage {
         throw err;
       }
       try {
-        const generated = await makeThumbnail(originalBytes, STONE_THUMB);
+        const generated = await makeThumbnail(originalBytes, ABRASIVE_THUMB);
         await fs.writeFile(thumbPath, generated);
         return { bytes: generated, contentType: THUMB_MIME };
       } catch (err) {
         console.warn(
-          `thumb generation failed for stone ${stoneId}/${filename}; serving original:`,
+          `thumb generation failed for abrasive ${abrasiveId}/${filename}; serving original:`,
           (err as Error).message,
         );
         return { bytes: originalBytes, contentType: mime };
@@ -503,7 +507,7 @@ export class MarkdownStorage implements Storage {
     }
 
     try {
-      const bytes = await fs.readFile(this.stoneImagePath(stoneId, filename));
+      const bytes = await fs.readFile(this.abrasiveImagePath(abrasiveId, filename));
       return { bytes, contentType: mime };
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code === "ENOENT") return null;
@@ -511,16 +515,16 @@ export class MarkdownStorage implements Storage {
     }
   }
 
-  async deleteStoneImage(stoneId: string, filename: string): Promise<boolean> {
+  async deleteAbrasiveImage(abrasiveId: string, filename: string): Promise<boolean> {
     let removed = false;
     try {
-      await fs.unlink(this.stoneImagePath(stoneId, filename));
+      await fs.unlink(this.abrasiveImagePath(abrasiveId, filename));
       removed = true;
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
     }
     try {
-      await fs.unlink(this.stoneImagePath(stoneId, thumbFilename(filename)));
+      await fs.unlink(this.abrasiveImagePath(abrasiveId, thumbFilename(filename)));
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
     }

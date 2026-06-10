@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Layers, PocketKnife } from "lucide-react";
+import { ArrowLeft, Gem, PocketKnife } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -10,9 +10,9 @@ import { Photo } from "@/components/photo";
 import { Markdown } from "@/components/markdown";
 import { PropertyList, PropertyRow } from "@/components/property-row";
 import { api } from "@/lib/api-client";
-import { usagesForStone } from "@/lib/stones";
+import { isStrop, usagesForAbrasive } from "@/lib/abrasives";
 import { cn } from "@/lib/utils";
-import type { Knife, Stone } from "@/lib/storage/types";
+import type { Abrasive, Knife } from "@/lib/storage/types";
 
 const dateFmt = new Intl.DateTimeFormat("de-DE", { dateStyle: "short" });
 
@@ -22,56 +22,57 @@ function formatDate(iso: string): string {
   return dateFmt.format(new Date(y, m - 1, d));
 }
 
-export default function StoneDetailPage() {
+export default function AbrasiveDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [stone, setStone] = useState<Stone | null>(null);
+  const [abrasive, setAbrasive] = useState<Abrasive | null>(null);
   const [knives, setKnives] = useState<Knife[]>([]);
-  const [stones, setStones] = useState<Stone[]>([]);
+  const [abrasives, setAbrasives] = useState<Abrasive[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([api.getStone(id), api.listKnives(), api.listStones()])
-      .then(([st, k, all]) => {
-        setStone(st);
+    Promise.all([api.getAbrasive(id), api.listKnives(), api.listAbrasives()])
+      .then(([a, k, all]) => {
+        setAbrasive(a);
         setKnives(k);
-        setStones(all);
+        setAbrasives(all);
       })
       .catch((err) => toast.error(err instanceof Error ? err.message : "Failed to load"))
       .finally(() => setLoading(false));
   }, [id]);
 
-  const stoneById = useMemo(
-    () => Object.fromEntries(stones.map((s) => [s.id, s])),
-    [stones],
+  const abrasiveById = useMemo(
+    () => Object.fromEntries(abrasives.map((a) => [a.id, a])),
+    [abrasives],
   );
-  const usages = useMemo(() => usagesForStone(knives, id), [knives, id]);
+  const usages = useMemo(() => usagesForAbrasive(knives, id), [knives, id]);
 
   if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
-  if (!stone) {
+  if (!abrasive) {
     return (
       <div className="space-y-6">
         <Link
-          href="/stones"
+          href="/abrasives"
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-3 w-3" />
-          <Layers className="h-3 w-3" />
-          All stones
+          <Gem className="h-3 w-3" />
+          All abrasives
         </Link>
-        <EmptyState title="Stone not found" hint="No record matches this slug." />
+        <EmptyState title="Abrasive not found" hint="No record matches this slug." />
       </div>
     );
   }
 
-  const hero = stone.images[0];
-  const galleryImages = stone.images.slice(1);
+  const hero = abrasive.images[0];
+  const galleryImages = abrasive.images.slice(1);
+  const strop = isStrop(abrasive);
 
   return (
     <div className="space-y-10">
       {hero && (
         <Photo
-          src={api.stoneImageUrl(stone.id, hero.filename)}
-          alt={hero.caption || stone.name}
+          src={api.abrasiveImageUrl(abrasive.id, hero.filename)}
+          alt={hero.caption || abrasive.name}
           className="w-full overflow-hidden rounded-md bg-muted/40"
           imgClassName="h-auto"
           loadingMinHeight="14rem"
@@ -79,23 +80,27 @@ export default function StoneDetailPage() {
       )}
       <header className="space-y-3">
         <Link
-          href="/stones"
+          href="/abrasives"
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-3 w-3" />
-          <Layers className="h-3 w-3" />
-          All stones
+          <Gem className="h-3 w-3" />
+          All abrasives
         </Link>
         <h1 className="flex items-center gap-3 text-4xl font-semibold tracking-tight text-brass">
-          <Layers className="h-8 w-8" />
-          {stone.name}
+          <Gem className="h-8 w-8" />
+          {abrasive.name}
         </h1>
         <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
-          <span className="font-mono">{stone.grit}</span>
-          {stone.type && (
+          {strop && abrasive.compound ? (
+            <span>{abrasive.compound}</span>
+          ) : (
+            <span className="font-mono">{abrasive.grit}</span>
+          )}
+          {abrasive.type && (
             <>
               <span>·</span>
-              <span>{stone.type}</span>
+              <span>{abrasive.type}</span>
             </>
           )}
           <span>·</span>
@@ -107,19 +112,25 @@ export default function StoneDetailPage() {
       <section>
         <PropertyList>
           <PropertyRow label="Grit">
-            <span className="font-mono">{stone.grit}</span>
+            <span className="font-mono">{abrasive.grit}</span>
           </PropertyRow>
-          {stone.type && <PropertyRow label="Type">{stone.type}</PropertyRow>}
+          {abrasive.type && <PropertyRow label="Type">{abrasive.type}</PropertyRow>}
+          {abrasive.compound && (
+            <PropertyRow label="Compound">{abrasive.compound}</PropertyRow>
+          )}
+          {abrasive.substrate && (
+            <PropertyRow label="Substrate">{abrasive.substrate}</PropertyRow>
+          )}
         </PropertyList>
       </section>
 
       <section className="space-y-3">
-        {stone.notes ? (
-          <Markdown>{stone.notes}</Markdown>
+        {abrasive.notes ? (
+          <Markdown>{abrasive.notes}</Markdown>
         ) : (
           <EmptyState
             title="No notes yet"
-            hint="PATCH /api/stones/<id> with a markdown `notes` body — soak time, dishing observations, anything worth keeping next to the stone."
+            hint="PATCH /api/abrasives/<id> with a markdown `notes` body — soak time, dishing observations, anything worth keeping next to the abrasive."
           />
         )}
       </section>
@@ -133,8 +144,8 @@ export default function StoneDetailPage() {
             {galleryImages.map((img) => (
               <figure key={img.filename} className="space-y-1.5">
                 <Photo
-                  src={api.stoneImageUrl(stone.id, img.filename)}
-                  alt={img.caption || stone.name}
+                  src={api.abrasiveImageUrl(abrasive.id, img.filename)}
+                  alt={img.caption || abrasive.name}
                   className="w-full overflow-hidden rounded-md bg-muted/40"
                   imgClassName="h-auto"
                   loadingMinHeight="10rem"
@@ -150,11 +161,11 @@ export default function StoneDetailPage() {
 
       <section className="space-y-3">
         <h2 className="font-heading text-sm uppercase tracking-wider text-foreground/80">
-          Sessions using this stone
+          Sessions using this abrasive
         </h2>
         {usages.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No sharpening session has referenced this stone yet.
+            No sharpening session has referenced this abrasive yet.
           </p>
         ) : (
           <ol className="relative space-y-5 border-l border-border/60 pl-6">
@@ -176,10 +187,10 @@ export default function StoneDetailPage() {
                     {u.angle}°
                   </span>
                 </div>
-                {u.stones.length > 1 && (
-                  <StoneProgression
-                    stones={u.stones}
-                    stoneById={stoneById}
+                {u.abrasives.length > 1 && (
+                  <AbrasiveProgression
+                    abrasives={u.abrasives}
+                    abrasiveById={abrasiveById}
                     activeId={id}
                   />
                 )}
@@ -192,27 +203,27 @@ export default function StoneDetailPage() {
   );
 }
 
-function StoneProgression({
-  stones,
-  stoneById,
+function AbrasiveProgression({
+  abrasives,
+  abrasiveById,
   activeId,
 }: {
-  stones: string[];
-  stoneById: Record<string, Stone>;
+  abrasives: string[];
+  abrasiveById: Record<string, Abrasive>;
   activeId?: string;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-1 text-xs">
-      {stones.map((sid, i) => {
-        const s = stoneById[sid];
-        const label = s ? `${s.grit}` : sid;
-        const isActive = sid === activeId;
+      {abrasives.map((aid, i) => {
+        const a = abrasiveById[aid];
+        const label = a ? chipLabel(a) : aid;
+        const isActive = aid === activeId;
         return (
-          <span key={`${sid}-${i}`} className="inline-flex items-center gap-1">
+          <span key={`${aid}-${i}`} className="inline-flex items-center gap-1">
             {i > 0 && <span className="text-muted-foreground/50">→</span>}
-            {s ? (
+            {a ? (
               <Link
-                href={`/stones/${sid}`}
+                href={`/abrasives/${aid}`}
                 className={cn(
                   "inline-flex items-center rounded-md border px-1.5 py-0.5 font-mono hover:underline",
                   isActive
@@ -232,4 +243,14 @@ function StoneProgression({
       })}
     </div>
   );
+}
+
+// Chip label rule: for a strop, prefer the compound shorthand
+// (`CrOx`, `Diamond 1µm`) if present, else `STROP`. For a stone,
+// the grit number.
+function chipLabel(a: Abrasive): string {
+  if (isStrop(a)) {
+    return a.compound.trim() || "STROP";
+  }
+  return String(a.grit);
 }

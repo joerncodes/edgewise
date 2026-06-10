@@ -1,13 +1,13 @@
 import { z } from "zod";
 import {
+  AbrasiveInputSchema,
+  AbrasiveSchema,
   KnifeInputSchema,
   KnifeSchema,
   OwnerInputSchema,
   OwnerSchema,
   SteelInputSchema,
   SteelSchema,
-  StoneInputSchema,
-  StoneSchema,
   SharpeningSessionSchema,
   ImageRefSchema,
 } from "@/lib/storage/types";
@@ -19,8 +19,8 @@ const SCHEMAS = {
   OwnerInput: OwnerInputSchema,
   Steel: SteelSchema,
   SteelInput: SteelInputSchema,
-  Stone: StoneSchema,
-  StoneInput: StoneInputSchema,
+  Abrasive: AbrasiveSchema,
+  AbrasiveInput: AbrasiveInputSchema,
   SharpeningSession: SharpeningSessionSchema,
   ImageRef: ImageRefSchema,
 } as const;
@@ -58,14 +58,14 @@ const ENDPOINTS = `\
 | GET    | \`/api/steels/{id}\`                    | —                  | \`{ steel }\`              |
 | PATCH  | \`/api/steels/{id}\`                    | partial \`SteelInput\` | \`{ steel }\`          |
 | DELETE | \`/api/steels/{id}\`                    | —                  | 204 (409 if in use)      |
-| GET    | \`/api/stones\`                         | —                  | \`{ stones: Stone[] }\`    |
-| POST   | \`/api/stones\`                         | \`StoneInput\`       | \`{ stone }\` (201)        |
-| GET    | \`/api/stones/{id}\`                    | —                  | \`{ stone }\`              |
-| PATCH  | \`/api/stones/{id}\`                    | partial \`StoneInput\` | \`{ stone }\`           |
-| DELETE | \`/api/stones/{id}\`                    | —                  | 204 (409 if referenced)  |
-| POST   | \`/api/stones/{id}/images\`             | multipart (\`file\`, optional \`caption\`) | \`{ stone }\` (201) |
-| GET    | \`/api/stones/{id}/images/{filename}\`  | \`?size=thumb\`      | image bytes              |
-| DELETE | \`/api/stones/{id}/images/{filename}\`  | —                  | \`{ stone }\`              |
+| GET    | \`/api/abrasives\`                      | —                  | \`{ abrasives: Abrasive[] }\` |
+| POST   | \`/api/abrasives\`                      | \`AbrasiveInput\`    | \`{ abrasive }\` (201)     |
+| GET    | \`/api/abrasives/{id}\`                 | —                  | \`{ abrasive }\`           |
+| PATCH  | \`/api/abrasives/{id}\`                 | partial \`AbrasiveInput\` | \`{ abrasive }\`      |
+| DELETE | \`/api/abrasives/{id}\`                 | —                  | 204 (409 if referenced)  |
+| POST   | \`/api/abrasives/{id}/images\`          | multipart (\`file\`, optional \`caption\`) | \`{ abrasive }\` (201) |
+| GET    | \`/api/abrasives/{id}/images/{filename}\` | \`?size=thumb\`    | image bytes              |
+| DELETE | \`/api/abrasives/{id}/images/{filename}\` | —                | \`{ abrasive }\`           |
 | GET    | \`/api/stats\`                          | —                  | aggregate stats (see below) |
 | GET    | \`/api/diary\`                          | —                  | chronological session log (see below) |
 | GET    | \`/api/janitor\`                        | \`?staleAfterDays\`  | knives missing fields (see below) |
@@ -111,15 +111,20 @@ curl -s -X POST $BASE/api/steels \\
   -H 'Content-Type: application/json' \\
   -d '{"name":"80CrV2","composition":"0.8% C, 0.5% Cr, 0.15% V","notes":"High-carbon — wipe dry, oil occasionally."}'
 
-# Add a stone, then record a session that walks coarse → fine
-curl -s -X POST $BASE/api/stones \\
+# Add abrasives (stones and strops live in the same table), then
+# record a session that walks coarse → fine and finishes on a strop
+curl -s -X POST $BASE/api/abrasives \\
   -H "Authorization: Bearer $TOKEN" \\
   -H 'Content-Type: application/json' \\
   -d '{"name":"Shapton Pro 1000","grit":1000,"type":"waterstone"}'
+curl -s -X POST $BASE/api/abrasives \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H 'Content-Type: application/json' \\
+  -d '{"name":"Kangaroo strop","grit":60000,"type":"strop","compound":"chromium oxide 0.5 µm","substrate":"kangaroo leather"}'
 curl -s -X POST $BASE/api/knives/wusthof-chef-8/sessions \\
   -H "Authorization: Bearer $TOKEN" \\
   -H 'Content-Type: application/json' \\
-  -d '{"date":"2026-06-10","angle":18,"stones":["shapton-pro-1000-1000","shapton-pro-5000-5000"]}'
+  -d '{"date":"2026-06-10","angle":18,"abrasives":["shapton-pro-1000-1000","kangaroo-strop-60000"]}'
 
 # Aggregate stats — sessions/month, per-owner counts, angle histogram, etc.
 curl -s $BASE/api/stats -H "Authorization: Bearer $TOKEN" | jq
@@ -209,23 +214,40 @@ type Facets = {
 };
 \`\`\`
 
-## Stones
+## Abrasives
 
-\`SharpeningSession.stones\` is an optional ordered array of \`Stone.id\`s
-recording the grit progression used in that session — \`["shapton-400",
-"shapton-1000", "shapton-5000"]\` — coarse → fine. Order matters and is
-preserved. The session POST rejects unknown stone IDs with \`400\`;
-deleting a stone that any session still references returns \`409\`.
+\`SharpeningSession.abrasives\` is an optional ordered array of
+\`Abrasive.id\`s recording the progression used in that session —
+\`["shapton-400", "shapton-1000", "shapton-5000", "kangaroo-strop"]\` —
+coarse → fine. Order matters and is preserved. The session POST
+rejects unknown abrasive IDs with \`400\`; deleting an abrasive that
+any session still references returns \`409\`.
 
-Stones themselves carry a numeric \`grit\` (the defining property), an
-optional \`type\` (\`waterstone\`, \`diamond plate\`, \`ceramic\`, \`strop\`),
-a markdown \`notes\` body for soak time, dishing observations, "needs
-flattening" reminders, and 0..n images on the same multipart upload
-pattern as knife images. Thumbnails are square (400×400 cover) rather
-than 3:1 — stones are roughly square objects. Image bytes live under
-\`$DATA_DIR/stone-images/<stone-id>/<filename>\`; deleting a stone
-removes its image directory too. Grit is unitless — pick one scale
-(JIS by default) and stick with it across the corpus.
+Abrasives are the umbrella for stones, strops, and anything else you
+push an edge across to refine it. The \`type\` field discriminates
+(\`waterstone\`, \`diamond plate\`, \`ceramic\`, \`strop\`). Every abrasive
+carries a numeric \`grit\` (the defining property for sortable
+progression), a markdown \`notes\` body, and 0..n images on the same
+multipart upload pattern as knife images. Thumbnails are square
+(400×400 cover) rather than 3:1 — abrasives are roughly square
+objects. Image bytes live under
+\`$DATA_DIR/abrasive-images/<abrasive-id>/<filename>\`; deleting an
+abrasive removes its image directory too.
+
+**Strop-specific fields** are optional on every abrasive but
+typically populated only when \`type === "strop"\`:
+
+- \`compound\` — free-form, e.g. \`chromium oxide 0.5 µm\`,
+  \`diamond paste 1 µm\`, or \`none\` for bare leather.
+- \`substrate\` — free-form, e.g. \`leather\`, \`balsa\`, \`denim\`,
+  \`kangaroo leather\`, \`MDF\`.
+
+For a strop, \`grit\` represents the *effective* grit of the compound
+(chromium oxide ≈ 60000), not the substrate. That keeps the
+progression sortable end-to-end.
+
+Grit is unitless — pick one scale (JIS by default) and stick with it
+across the corpus.
 
 ## Steels
 
