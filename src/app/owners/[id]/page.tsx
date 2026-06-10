@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { KnifeCard } from "@/components/knife-card";
+import { KnivesView } from "@/components/knives-view";
+import { ListViewToggle, useViewMode } from "@/components/list-view-toggle";
 import { PropertyList, PropertyRow } from "@/components/property-row";
 import { api } from "@/lib/api-client";
 import type { Knife, Owner } from "@/lib/storage/types";
@@ -15,6 +16,7 @@ export default function OwnerDetailPage() {
   const [owner, setOwner] = useState<Owner | null>(null);
   const [knives, setKnives] = useState<Knife[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useViewMode();
 
   useEffect(() => {
     Promise.all([api.getOwner(id), api.listKnives()])
@@ -65,19 +67,25 @@ export default function OwnerDetailPage() {
       )}
 
       <section className="space-y-3">
-        <SectionLabel>
-          {knives.length === 1 ? "1 knife" : `${knives.length} knives`}
-        </SectionLabel>
+        <div className="flex items-center justify-between gap-3">
+          <SectionLabel>
+            {knives.length === 1 ? "1 knife" : `${knives.length} knives`}
+          </SectionLabel>
+          {knives.length > 0 && (
+            <ListViewToggle mode={viewMode} onModeChange={setViewMode} />
+          )}
+        </div>
         {knives.length === 0 ? (
           <p className="text-sm text-muted-foreground">No knives for this owner yet.</p>
         ) : (
-          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {knives.map((k) => (
-              <li key={k.id}>
-                <KnifeCard knife={k} owner={owner} now={now} />
-              </li>
-            ))}
-          </ul>
+          <KnivesView
+            knives={knives}
+            owners={[owner]}
+            now={now}
+            mode={viewMode}
+            hideColumns={["owner"]}
+            gridClassName="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          />
         )}
       </section>
     </div>

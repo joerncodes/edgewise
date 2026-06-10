@@ -21,3 +21,4 @@ a pointer to the replacement, rather than being edited in place.
 | 0009 | [Self-describing API endpoint for LLMs](0009-self-describing-api-endpoint.md) | accepted |
 | 0010 | [Thumbnails backfilled, no create-on-miss](0010-thumbnails-backfilled-no-create-on-miss.md) | superseded by 0011 |
 | 0011 | [Thumbnails generated on first read](0011-thumbnails-create-on-miss.md) | accepted |
+| 0012 | [Homepage hero only renders in cards view](0012-hero-only-in-cards-view.md) | accepted |

@@ -23,6 +23,8 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
 import { KnifeCard } from "@/components/knife-card";
 import { KnifeFilters } from "@/components/knife-filters";
+import { KnivesView } from "@/components/knives-view";
+import { ListViewToggle, useViewMode } from "@/components/list-view-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -68,6 +70,7 @@ export default function BacklogPage() {
   const [filters, setFilters] = useState<FilterState>(() => emptyFilterState());
   const [sort, setSort] = useState<SortKey>("manual");
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [viewMode, setViewMode] = useViewMode();
 
   useEffect(() => {
     Promise.all([api.listKnives(), api.listOwners()])
@@ -121,6 +124,7 @@ export default function BacklogPage() {
   // storage — i.e. manual sort with no filter or search narrowing it.
   const filtersActive = q.trim() !== "" || !filterStateIsEmpty(filters);
   const dndEnabled = sort === "manual" && !filtersActive;
+  const dndPaused = sort === "manual" && filtersActive;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -129,16 +133,7 @@ export default function BacklogPage() {
 
   const activeFilterCount = totalActiveFilters(filters);
 
-  async function handleDragEnd(e: DragEndEvent) {
-    const { active, over } = e;
-    if (!over || active.id === over.id) return;
-    const ids = filteredSorted.map((k) => k.id);
-    const oldIndex = ids.indexOf(String(active.id));
-    const newIndex = ids.indexOf(String(over.id));
-    if (oldIndex < 0 || newIndex < 0) return;
-
-    const newOrder = arrayMove(ids, oldIndex, newIndex);
-
+  async function persistReorder(newOrder: string[]) {
     const previous = knives;
     const positionById = new Map(newOrder.map((id, i) => [id, i + 1]));
     setKnives((curr) =>
@@ -155,6 +150,16 @@ export default function BacklogPage() {
       setKnives(previous);
       toast.error(err instanceof Error ? err.message : "Failed to reorder");
     }
+  }
+
+  function handleDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const ids = filteredSorted.map((k) => k.id);
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    persistReorder(arrayMove(ids, oldIndex, newIndex));
   }
 
   return (
@@ -246,9 +251,10 @@ export default function BacklogPage() {
                   <SelectItem value="owner">{SORT_LABELS.owner}</SelectItem>
                 </SelectContent>
               </Select>
+              <ListViewToggle mode={viewMode} onModeChange={setViewMode} />
             </div>
 
-            {sort === "manual" && filtersActive && (
+            {dndPaused && (
               <p className="text-xs text-muted-foreground">
                 Drag-and-drop is paused while a search or filter is active —
                 clear them to reorder.
@@ -260,7 +266,7 @@ export default function BacklogPage() {
                 title="Nothing matches"
                 hint="Clear the search or change the filters."
               />
-            ) : dndEnabled ? (
+            ) : dndEnabled && viewMode === "cards" ? (
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
@@ -283,17 +289,14 @@ export default function BacklogPage() {
                 </SortableContext>
               </DndContext>
             ) : (
-              <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {filteredSorted.map((k) => (
-                  <li key={k.id}>
-                    <KnifeCard
-                      knife={k}
-                      owner={ownerById[k.ownerId]}
-                      now={now}
-                    />
-                  </li>
-                ))}
-              </ul>
+              <KnivesView
+                knives={filteredSorted}
+                owners={owners}
+                now={now}
+                mode={viewMode}
+                variant="backlog"
+                onReorder={dndEnabled && viewMode === "table" ? persistReorder : undefined}
+              />
             )}
           </main>
         </div>

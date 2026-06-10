@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
-import { KnifeCard } from "@/components/knife-card";
+import { KnivesView } from "@/components/knives-view";
+import { ListViewToggle, useViewMode } from "@/components/list-view-toggle";
 import { Markdown } from "@/components/markdown";
 import { PropertyList, PropertyRow } from "@/components/property-row";
 import { api } from "@/lib/api-client";
@@ -18,6 +19,7 @@ export default function SteelDetailPage() {
   const [owners, setOwners] = useState<Owner[]>([]);
   const [steels, setSteels] = useState<Steel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useViewMode();
 
   useEffect(() => {
     Promise.all([api.listKnives(), api.listOwners(), api.listSteels()])
@@ -29,10 +31,6 @@ export default function SteelDetailPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const ownerById = useMemo(
-    () => Object.fromEntries(owners.map((o) => [o.id, o])),
-    [owners],
-  );
   const entry = useMemo(() => findSteel(knives, steels, slug), [knives, steels, slug]);
   const record = useMemo(() => steels.find((s) => s.id === slug), [steels, slug]);
   const knivesOfSteel = useMemo(() => {
@@ -106,16 +104,20 @@ export default function SteelDetailPage() {
 
       {knivesOfSteel.length > 0 && (
         <section className="space-y-3">
-          <h2 className="font-heading text-sm uppercase tracking-wider text-foreground/80">
-            Knives with this steel
-          </h2>
-          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {knivesOfSteel.map((k) => (
-              <li key={k.id}>
-                <KnifeCard knife={k} owner={ownerById[k.ownerId]} now={now} />
-              </li>
-            ))}
-          </ul>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-heading text-sm uppercase tracking-wider text-foreground/80">
+              Knives with this steel
+            </h2>
+            <ListViewToggle mode={viewMode} onModeChange={setViewMode} />
+          </div>
+          <KnivesView
+            knives={knivesOfSteel}
+            owners={owners}
+            now={now}
+            mode={viewMode}
+            hideColumns={["steel"]}
+            gridClassName="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          />
         </section>
       )}
     </div>

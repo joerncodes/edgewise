@@ -13,6 +13,8 @@ import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { KnifeCard, lastSession } from "@/components/knife-card";
 import { KnifeFilters } from "@/components/knife-filters";
+import { KnivesView } from "@/components/knives-view";
+import { ListViewToggle, useViewMode } from "@/components/list-view-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -58,6 +60,7 @@ export default function HomePage() {
   const [filters, setFilters] = useState<FilterState>(() => emptyFilterState());
   const [sort, setSort] = useState<SortKey>("recent");
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [viewMode, setViewMode] = useViewMode();
 
   useEffect(() => {
     Promise.all([api.listKnives(), api.listOwners()])
@@ -122,16 +125,17 @@ export default function HomePage() {
 
   // Hero is hidden while the user is actively narrowing — search text
   // or any facet selection. The hero is a landing-page focal point, not
-  // a search result.
+  // a search result. It also disappears in table view, where a dense
+  // sortable list is the whole point — see ADR-0012.
   const isFilterActive = q.trim() !== "" || !filterStateIsEmpty(filters);
   const heroKnife = useMemo(() => {
-    if (isFilterActive) return undefined;
+    if (isFilterActive || viewMode === "table") return undefined;
     const candidates = knives.filter((k) => k.images.length > 0 && lastSession(k));
     if (candidates.length === 0) return undefined;
     return candidates.sort((a, b) =>
       (lastSession(b)?.date ?? "").localeCompare(lastSession(a)?.date ?? ""),
     )[0];
-  }, [knives, isFilterActive]);
+  }, [knives, isFilterActive, viewMode]);
   const gridKnives = heroKnife
     ? filteredSorted.filter((k) => k.id !== heroKnife.id)
     : filteredSorted;
@@ -237,6 +241,7 @@ export default function HomePage() {
                 <SelectItem value="added">{SORT_LABELS.added}</SelectItem>
               </SelectContent>
             </Select>
+            <ListViewToggle mode={viewMode} onModeChange={setViewMode} />
           </div>
 
           {loading ? (
@@ -268,17 +273,12 @@ export default function HomePage() {
                 </div>
               )}
               {gridKnives.length > 0 && (
-                <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  {gridKnives.map((k) => (
-                    <li key={k.id}>
-                      <KnifeCard
-                        knife={k}
-                        owner={ownerById[k.ownerId]}
-                        now={now}
-                      />
-                    </li>
-                  ))}
-                </ul>
+                <KnivesView
+                  knives={gridKnives}
+                  owners={owners}
+                  now={now}
+                  mode={viewMode}
+                />
               )}
             </div>
           )}

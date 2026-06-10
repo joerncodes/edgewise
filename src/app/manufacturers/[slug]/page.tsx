@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
-import { KnifeCard } from "@/components/knife-card";
+import { KnivesView } from "@/components/knives-view";
+import { ListViewToggle, useViewMode } from "@/components/list-view-toggle";
 import { api } from "@/lib/api-client";
 import { findManufacturer } from "@/lib/manufacturers";
 import type { Knife, Owner } from "@/lib/storage/types";
@@ -15,6 +16,7 @@ export default function ManufacturerDetailPage() {
   const [knives, setKnives] = useState<Knife[]>([]);
   const [owners, setOwners] = useState<Owner[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useViewMode();
 
   useEffect(() => {
     Promise.all([api.listKnives(), api.listOwners()])
@@ -25,10 +27,6 @@ export default function ManufacturerDetailPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const ownerById = useMemo(
-    () => Object.fromEntries(owners.map((o) => [o.id, o])),
-    [owners],
-  );
   const entry = useMemo(() => findManufacturer(knives, slug), [knives, slug]);
   const knivesByMaker = useMemo(() => {
     if (!entry) return [];
@@ -81,13 +79,18 @@ export default function ManufacturerDetailPage() {
         </p>
       </header>
 
-      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {knivesByMaker.map((k) => (
-          <li key={k.id}>
-            <KnifeCard knife={k} owner={ownerById[k.ownerId]} now={now} />
-          </li>
-        ))}
-      </ul>
+      <div className="flex justify-end">
+        <ListViewToggle mode={viewMode} onModeChange={setViewMode} />
+      </div>
+
+      <KnivesView
+        knives={knivesByMaker}
+        owners={owners}
+        now={now}
+        mode={viewMode}
+        hideColumns={["manufacturer"]}
+        gridClassName="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+      />
     </div>
   );
 }

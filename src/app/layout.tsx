@@ -9,6 +9,7 @@ import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
 const plexSans = IBM_Plex_Sans({
@@ -48,6 +49,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <ThemeProvider defaultTheme="dark">
           <SessionProvider>
+            <TooltipProvider>
             <header>
               <div className="mx-auto flex h-12 max-w-7xl items-center gap-6 px-6 text-sm">
                 <Link
@@ -81,6 +83,7 @@ export default function RootLayout({
             </header>
             <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-10">{children}</main>
             <Toaster richColors position="top-right" />
+            </TooltipProvider>
           </SessionProvider>
         </ThemeProvider>
       </body>

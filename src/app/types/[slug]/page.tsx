@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
-import { KnifeCard } from "@/components/knife-card";
+import { KnivesView } from "@/components/knives-view";
+import { ListViewToggle, useViewMode } from "@/components/list-view-toggle";
 import { api } from "@/lib/api-client";
 import { findKnifeType } from "@/lib/knife-types";
 import type { Knife, Owner } from "@/lib/storage/types";
@@ -15,6 +16,7 @@ export default function KnifeTypeDetailPage() {
   const [knives, setKnives] = useState<Knife[]>([]);
   const [owners, setOwners] = useState<Owner[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useViewMode();
 
   useEffect(() => {
     Promise.all([api.listKnives(), api.listOwners()])
@@ -25,10 +27,6 @@ export default function KnifeTypeDetailPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const ownerById = useMemo(
-    () => Object.fromEntries(owners.map((o) => [o.id, o])),
-    [owners],
-  );
   const entry = useMemo(() => findKnifeType(knives, slug), [knives, slug]);
   const knivesOfType = useMemo(() => {
     if (!entry) return [];
@@ -81,13 +79,18 @@ export default function KnifeTypeDetailPage() {
         </p>
       </header>
 
-      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {knivesOfType.map((k) => (
-          <li key={k.id}>
-            <KnifeCard knife={k} owner={ownerById[k.ownerId]} now={now} />
-          </li>
-        ))}
-      </ul>
+      <div className="flex justify-end">
+        <ListViewToggle mode={viewMode} onModeChange={setViewMode} />
+      </div>
+
+      <KnivesView
+        knives={knivesOfType}
+        owners={owners}
+        now={now}
+        mode={viewMode}
+        hideColumns={["type"]}
+        gridClassName="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+      />
     </div>
   );
 }
