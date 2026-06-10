@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 //   `loadingMinHeight` until onLoad; then the image takes its natural
 //   height. Some layout shift is unavoidable here — same as a plain
 //   <img> would do.
-export function KnifeImage({
+export function Photo({
   src,
   alt,
   className,

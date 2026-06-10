@@ -6,8 +6,10 @@ import {
   OwnerSchema,
   SteelInputSchema,
   SteelSchema,
+  StoneInputSchema,
+  StoneSchema,
   SharpeningSessionSchema,
-  KnifeImageSchema,
+  ImageRefSchema,
 } from "@/lib/storage/types";
 
 const SCHEMAS = {
@@ -17,8 +19,10 @@ const SCHEMAS = {
   OwnerInput: OwnerInputSchema,
   Steel: SteelSchema,
   SteelInput: SteelInputSchema,
+  Stone: StoneSchema,
+  StoneInput: StoneInputSchema,
   SharpeningSession: SharpeningSessionSchema,
-  KnifeImage: KnifeImageSchema,
+  ImageRef: ImageRefSchema,
 } as const;
 
 function renderSchemas(): string {
@@ -54,6 +58,14 @@ const ENDPOINTS = `\
 | GET    | \`/api/steels/{id}\`                    | —                  | \`{ steel }\`              |
 | PATCH  | \`/api/steels/{id}\`                    | partial \`SteelInput\` | \`{ steel }\`          |
 | DELETE | \`/api/steels/{id}\`                    | —                  | 204 (409 if in use)      |
+| GET    | \`/api/stones\`                         | —                  | \`{ stones: Stone[] }\`    |
+| POST   | \`/api/stones\`                         | \`StoneInput\`       | \`{ stone }\` (201)        |
+| GET    | \`/api/stones/{id}\`                    | —                  | \`{ stone }\`              |
+| PATCH  | \`/api/stones/{id}\`                    | partial \`StoneInput\` | \`{ stone }\`           |
+| DELETE | \`/api/stones/{id}\`                    | —                  | 204 (409 if referenced)  |
+| POST   | \`/api/stones/{id}/images\`             | multipart (\`file\`, optional \`caption\`) | \`{ stone }\` (201) |
+| GET    | \`/api/stones/{id}/images/{filename}\`  | \`?size=thumb\`      | image bytes              |
+| DELETE | \`/api/stones/{id}/images/{filename}\`  | —                  | \`{ stone }\`              |
 | GET    | \`/api/stats\`                          | —                  | aggregate stats (see below) |
 | GET    | \`/api/diary\`                          | —                  | chronological session log (see below) |
 | GET    | \`/api/janitor\`                        | \`?staleAfterDays\`  | knives missing fields (see below) |
@@ -97,6 +109,16 @@ curl -s -X POST $BASE/api/steels \\
   -H "Authorization: Bearer $TOKEN" \\
   -H 'Content-Type: application/json' \\
   -d '{"name":"80CrV2","composition":"0.8% C, 0.5% Cr, 0.15% V","notes":"High-carbon — wipe dry, oil occasionally."}'
+
+# Add a stone, then record a session that walks coarse → fine
+curl -s -X POST $BASE/api/stones \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H 'Content-Type: application/json' \\
+  -d '{"name":"Shapton Pro 1000","grit":1000,"type":"waterstone"}'
+curl -s -X POST $BASE/api/knives/wusthof-chef-8/sessions \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H 'Content-Type: application/json' \\
+  -d '{"date":"2026-06-10","angle":18,"stones":["shapton-pro-1000-1000","shapton-pro-5000-5000"]}'
 
 # Aggregate stats — sessions/month, per-owner counts, angle histogram, etc.
 curl -s $BASE/api/stats -H "Authorization: Bearer $TOKEN" | jq
@@ -160,6 +182,24 @@ type KnifeRef = { id: string; name: string; ownerId: string; ownerName: string }
 
 The matching UI is \`/janitor\` (also linked from the footer of
 \`/stats\`).
+
+## Stones
+
+\`SharpeningSession.stones\` is an optional ordered array of \`Stone.id\`s
+recording the grit progression used in that session — \`["shapton-400",
+"shapton-1000", "shapton-5000"]\` — coarse → fine. Order matters and is
+preserved. The session POST rejects unknown stone IDs with \`400\`;
+deleting a stone that any session still references returns \`409\`.
+
+Stones themselves carry a numeric \`grit\` (the defining property), an
+optional \`type\` (\`waterstone\`, \`diamond plate\`, \`ceramic\`, \`strop\`),
+a markdown \`notes\` body for soak time, dishing observations, "needs
+flattening" reminders, and 0..n images on the same multipart upload
+pattern as knife images. Thumbnails are square (400×400 cover) rather
+than 3:1 — stones are roughly square objects. Image bytes live under
+\`$DATA_DIR/stone-images/<stone-id>/<filename>\`; deleting a stone
+removes its image directory too. Grit is unitless — pick one scale
+(JIS by default) and stick with it across the corpus.
 
 ## Steels
 

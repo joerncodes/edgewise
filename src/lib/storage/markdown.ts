@@ -7,23 +7,26 @@ import {
   KnifeSchema,
   OwnerSchema,
   SteelSchema,
+  StoneSchema,
   mimeFromFilename,
   type ImageMimeType,
   type ImageSize,
   type Knife,
-  type KnifeImageBlob,
+  type ImageBlob,
   type Owner,
   type Steel,
+  type Stone,
   type Storage,
 } from "./types";
 
-// Thumbnails are always JPEG, sized to fit the 3:1 card cover. See
-// docs/todos/thumbnails.md.
-const THUMB_WIDTH = 600;
-const THUMB_HEIGHT = 200;
+// Thumbnails are always JPEG. Knife covers use a 3:1 banner; stones
+// use a square. See docs/todos/thumbnails.md.
 const THUMB_QUALITY = 80;
 const THUMB_EXT = "jpg";
 const THUMB_MIME: ImageMimeType = "image/jpeg";
+
+const KNIFE_THUMB = { width: 600, height: 200 };
+const STONE_THUMB = { width: 400, height: 400 };
 
 export function thumbFilename(filename: string): string {
   const dot = filename.lastIndexOf(".");
@@ -35,10 +38,13 @@ export function isThumbFilename(filename: string): boolean {
   return filename.toLowerCase().endsWith(`.thumb.${THUMB_EXT}`);
 }
 
-export async function makeThumbnail(bytes: Buffer): Promise<Buffer> {
+export async function makeThumbnail(
+  bytes: Buffer,
+  size: { width: number; height: number } = KNIFE_THUMB,
+): Promise<Buffer> {
   return sharp(bytes)
     .rotate() // honour EXIF orientation
-    .resize(THUMB_WIDTH, THUMB_HEIGHT, { fit: "cover", position: "centre" })
+    .resize(size.width, size.height, { fit: "cover", position: "centre" })
     .jpeg({ quality: THUMB_QUALITY, mozjpeg: true })
     .toBuffer();
 }
@@ -68,21 +74,27 @@ export class MarkdownStorage implements Storage {
   private knivesDir: string;
   private ownersDir: string;
   private steelsDir: string;
+  private stonesDir: string;
   private imagesDir: string;
+  private stoneImagesDir: string;
 
   constructor(opts: MarkdownStorageOptions) {
     this.dataDir = opts.dataDir;
     this.knivesDir = path.join(this.dataDir, "knives");
     this.ownersDir = path.join(this.dataDir, "owners");
     this.steelsDir = path.join(this.dataDir, "steels");
+    this.stonesDir = path.join(this.dataDir, "stones");
     this.imagesDir = path.join(this.dataDir, "images");
+    this.stoneImagesDir = path.join(this.dataDir, "stone-images");
   }
 
   private async ensureDirs() {
     await fs.mkdir(this.knivesDir, { recursive: true });
     await fs.mkdir(this.ownersDir, { recursive: true });
     await fs.mkdir(this.steelsDir, { recursive: true });
+    await fs.mkdir(this.stonesDir, { recursive: true });
     await fs.mkdir(this.imagesDir, { recursive: true });
+    await fs.mkdir(this.stoneImagesDir, { recursive: true });
   }
 
   private knifePath(id: string) {
@@ -97,6 +109,10 @@ export class MarkdownStorage implements Storage {
     return path.join(this.steelsDir, `${id}.md`);
   }
 
+  private stonePath(id: string) {
+    return path.join(this.stonesDir, `${id}.md`);
+  }
+
   private knifeImagesDir(id: string) {
     return path.join(this.imagesDir, id);
   }
@@ -107,6 +123,18 @@ export class MarkdownStorage implements Storage {
       throw new Error(`invalid image filename: ${filename}`);
     }
     return path.join(this.knifeImagesDir(id), safe);
+  }
+
+  private stoneImagesDirFor(id: string) {
+    return path.join(this.stoneImagesDir, id);
+  }
+
+  private stoneImagePath(id: string, filename: string) {
+    const safe = path.basename(filename);
+    if (safe !== filename || safe.includes("..") || safe.startsWith(".")) {
+      throw new Error(`invalid image filename: ${filename}`);
+    }
+    return path.join(this.stoneImagesDirFor(id), safe);
   }
 
   private async readFileOrNull(p: string): Promise<string | null> {
@@ -213,7 +241,7 @@ export class MarkdownStorage implements Storage {
     knifeId: string,
     filename: string,
     size: ImageSize = "original",
-  ): Promise<KnifeImageBlob | null> {
+  ): Promise<ImageBlob | null> {
     const mime = mimeFromFilename(filename);
     if (!mime) return null;
 
@@ -356,5 +384,146 @@ export class MarkdownStorage implements Storage {
       if ((err as NodeJS.ErrnoException).code === "ENOENT") return false;
       throw err;
     }
+  }
+
+  private parseStone(raw: string): Stone {
+    const parsed = matter(raw);
+    const data = normalizeDates({
+      ...parsed.data,
+      notes: parsed.content.trim(),
+    });
+    return StoneSchema.parse(data);
+  }
+
+  private serializeStone(stone: Stone): string {
+    const { notes, ...rest } = stone;
+    const fm = YAML.stringify(rest);
+    return `---\n${fm}---\n\n${notes ?? ""}\n`;
+  }
+
+  async listStones(): Promise<Stone[]> {
+    await this.ensureDirs();
+    const entries = await fs.readdir(this.stonesDir);
+    const stones = await Promise.all(
+      entries
+        .filter((f) => f.endsWith(".md"))
+        .map(async (f) => {
+          const raw = await fs.readFile(path.join(this.stonesDir, f), "utf8");
+          return this.parseStone(raw);
+        }),
+    );
+    // Sort coarse → fine; ties broken by name.
+    return stones.sort(
+      (a, b) => a.grit - b.grit || a.name.localeCompare(b.name),
+    );
+  }
+
+  async getStone(id: string): Promise<Stone | null> {
+    await this.ensureDirs();
+    const raw = await this.readFileOrNull(this.stonePath(id));
+    return raw ? this.parseStone(raw) : null;
+  }
+
+  async saveStone(stone: Stone): Promise<void> {
+    await this.ensureDirs();
+    await fs.writeFile(this.stonePath(stone.id), this.serializeStone(stone), "utf8");
+  }
+
+  async deleteStone(id: string): Promise<boolean> {
+    let removedMd = false;
+    try {
+      await fs.unlink(this.stonePath(id));
+      removedMd = true;
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    }
+    await fs.rm(this.stoneImagesDirFor(id), { recursive: true, force: true });
+    return removedMd;
+  }
+
+  async saveStoneImage(
+    stoneId: string,
+    filename: string,
+    _contentType: ImageMimeType,
+    bytes: Buffer,
+  ): Promise<void> {
+    const target = this.stoneImagePath(stoneId, filename);
+    await fs.mkdir(path.dirname(target), { recursive: true });
+    await fs.writeFile(target, bytes);
+
+    try {
+      const thumbBytes = await makeThumbnail(bytes, STONE_THUMB);
+      const thumbPath = this.stoneImagePath(stoneId, thumbFilename(filename));
+      await fs.writeFile(thumbPath, thumbBytes);
+    } catch (err) {
+      console.warn(
+        `thumb generation failed for stone ${stoneId}/${filename}:`,
+        (err as Error).message,
+      );
+    }
+  }
+
+  async readStoneImage(
+    stoneId: string,
+    filename: string,
+    size: ImageSize = "original",
+  ): Promise<ImageBlob | null> {
+    const mime = mimeFromFilename(filename);
+    if (!mime) return null;
+
+    if (size === "thumb") {
+      const thumbPath = this.stoneImagePath(stoneId, thumbFilename(filename));
+      try {
+        const cached = await fs.readFile(thumbPath);
+        return { bytes: cached, contentType: THUMB_MIME };
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+      }
+      // Cache miss: regenerate from the original. Mirrors the knife
+      // read-path (ADR-0011) — GETs may write the cache.
+      const originalPath = this.stoneImagePath(stoneId, filename);
+      let originalBytes: Buffer;
+      try {
+        originalBytes = await fs.readFile(originalPath);
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code === "ENOENT") return null;
+        throw err;
+      }
+      try {
+        const generated = await makeThumbnail(originalBytes, STONE_THUMB);
+        await fs.writeFile(thumbPath, generated);
+        return { bytes: generated, contentType: THUMB_MIME };
+      } catch (err) {
+        console.warn(
+          `thumb generation failed for stone ${stoneId}/${filename}; serving original:`,
+          (err as Error).message,
+        );
+        return { bytes: originalBytes, contentType: mime };
+      }
+    }
+
+    try {
+      const bytes = await fs.readFile(this.stoneImagePath(stoneId, filename));
+      return { bytes, contentType: mime };
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === "ENOENT") return null;
+      throw err;
+    }
+  }
+
+  async deleteStoneImage(stoneId: string, filename: string): Promise<boolean> {
+    let removed = false;
+    try {
+      await fs.unlink(this.stoneImagePath(stoneId, filename));
+      removed = true;
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    }
+    try {
+      await fs.unlink(this.stoneImagePath(stoneId, thumbFilename(filename)));
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    }
+    return removed;
   }
 }

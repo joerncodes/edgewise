@@ -11,8 +11,13 @@ $DATA_DIR/
     <slug>.md
   steels/
     <slug>.md
+  stones/
+    <slug>.md
   images/
     <knife-id>/
+      <filename>
+  stone-images/
+    <stone-id>/
       <filename>
 ```
 
@@ -104,21 +109,29 @@ manual view, sorted by `createdAt` — no special-case migration needed.
 
 ### Session
 
-| field    | type   | required | notes                              |
-|----------|--------|----------|------------------------------------|
-| `date`   | string | yes      | `YYYY-MM-DD`                       |
-| `angle`  | number | yes      | degrees per side, 1–45             |
-| `notes`  | string | no       | what was done that day             |
-| `rating` | number | no       | subjective 1–5, free precision     |
+| field    | type     | required | notes                                |
+|----------|----------|----------|--------------------------------------|
+| `date`   | string   | yes      | `YYYY-MM-DD`                         |
+| `angle`  | number   | yes      | degrees per side, 1–45               |
+| `notes`  | string   | no       | what was done that day               |
+| `rating` | number   | no       | subjective 1–5, free precision       |
+| `stones` | string[] | no       | `Stone.id`s in coarse → fine order   |
 
 `rating` is the owner's gut feel for how the session went. Free-precision
 float in `[1, 5]` (e.g. `2.6`, `4.8`). The UI rounds to the nearest half
 step for display (stars), but the on-disk value stays exact.
 
+`stones` is the grit progression for the session — array order is
+meaningful (`["shapton-400", "shapton-1000", "shapton-5000"]`) and is
+never sorted on read or write. Pre-existing sessions have no `stones`
+field and that stays valid. `POST /api/knives/{id}/sessions` rejects
+sessions referencing an unknown stone ID with `400`.
+
 ### Image
 
-A knife can carry 0..n images. The frontmatter holds the metadata; bytes
-live under `$DATA_DIR/images/<knife-id>/<filename>` and are served via
+A knife can carry 0..n images. The frontmatter holds metadata as the
+shared `ImageRef` shape; bytes live under
+`$DATA_DIR/images/<knife-id>/<filename>` and are served via
 `GET /api/knives/<id>/images/<filename>`.
 
 | field      | type   | required | notes                                  |
@@ -127,7 +140,8 @@ live under `$DATA_DIR/images/<knife-id>/<filename>` and are served via
 | `caption`  | string | no       | optional                               |
 | `addedAt`  | ISO    | yes      | server-set on upload                   |
 
-Order in the array matters: the first entry is the "cover".
+Order in the array matters: the first entry is the "cover". The same
+`ImageRef` shape is reused by Stone — see the Stone section below.
 
 Supported MIME types: `image/jpeg`, `image/png`, `image/webp`. Max upload
 size: 10 MB.
@@ -196,6 +210,62 @@ Slug canonicalisation: steel names are weird (`80CrV2`, `80Crv2`,
 string. Two knives whose `steel` strings slugify to the same value
 are considered the same steel.
 
+## Stone
+
+`stones/<id>.md`:
+
+```yaml
+---
+id: shapton-pro-1000
+name: Shapton Pro 1000
+grit: 1000
+type: waterstone
+createdAt: 2026-06-10T12:00:00.000Z
+updatedAt: 2026-06-10T12:00:00.000Z
+---
+
+Splash-and-go, no soak. Dishes faster than the 2000 — flatten roughly
+every 20 sessions.
+```
+
+Fields:
+
+| field       | type   | required | notes                                    |
+|-------------|--------|----------|------------------------------------------|
+| `id`        | string | yes      | slug, file name without `.md`            |
+| `name`      | string | yes      | free-form (`Shapton Pro 1000`, `King 1000`) |
+| `grit`      | number | yes      | the defining property; unitless          |
+| `type`      | string | no       | `waterstone`, `diamond plate`, `ceramic`, `strop` |
+| `notes`     | string | no       | the markdown body — soak time, flattening reminders |
+| `images`    | ImageRef[] | no   | metadata for 0..n images; same shape as knives |
+| `createdAt` | ISO    | yes      |                                          |
+| `updatedAt` | ISO    | yes      |                                          |
+
+`grit` is a bare number — no scale qualifier. JIS is the default; pick
+a scale and stick with it across the corpus. Sessions link to stones
+by `id` (see `session.stones` above).
+
+Stone image bytes live under `$DATA_DIR/stone-images/<stone-id>/<filename>`
+— a separate root from knife images so cleanup on stone delete can
+just `rm -rf` the directory. Same upload pattern as knives
+(`POST /api/stones/{id}/images` multipart, `GET … ?size=thumb` for the
+cache-on-miss thumbnail), but the thumbnail is a 400×400 square cover
+rather than a 3:1 banner — stones are roughly square objects, so a
+banner crop loses the part you care about. Deleting a stone removes
+the matching `stone-images/<stone-id>/` directory too.
+
+The `images:` array uses the shared `ImageRef` shape:
+
+| field      | type   | required | notes                                  |
+|------------|--------|----------|----------------------------------------|
+| `filename` | string | yes      | sanitized name on disk, includes ext   |
+| `caption`  | string | no       | optional                               |
+| `addedAt`  | ISO    | yes      | server-set on upload                   |
+
+Same shape as the knife `images:` array. Order matters: the first
+entry is the "cover" rendered as the row thumbnail on `/stones` and
+the hero on `/stones/<id>`.
+
 ## Referential integrity
 
 - Creating a knife requires the `ownerId` to exist; the API rejects otherwise.
@@ -203,6 +273,10 @@ are considered the same steel.
   knives first.
 - Deleting a steel that any knife references returns `409`. Change or
   clear the knife's `steel` field first.
+- A session's `stones[]` are foreign keys: `POST /api/knives/{id}/sessions`
+  rejects unknown stone IDs with `400`. Deleting a stone that any
+  session still references returns `409` — remove or rewrite those
+  sessions first.
 
 ## Editing by hand
 

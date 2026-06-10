@@ -5,15 +5,22 @@ export const SharpeningSessionSchema = z.object({
   angle: z.number().positive().max(45),
   notes: z.string().optional().default(""),
   rating: z.number().min(1).max(5).optional(),
+  // Stone IDs used in this session, in progression order
+  // (coarse → fine: 400 → 1000 → 5000). Array order is preserved
+  // and meaningful — don't sort it.
+  stones: z.array(z.string().min(1)).optional(),
 });
 export type SharpeningSession = z.infer<typeof SharpeningSessionSchema>;
 
-export const KnifeImageSchema = z.object({
+// One image record on disk. Same shape for every entity that carries
+// images — Knife, Stone, anything we add later — so the schema lives
+// here once and gets reused.
+export const ImageRefSchema = z.object({
   filename: z.string().min(1),
   caption: z.string().optional().default(""),
   addedAt: z.string(),
 });
-export type KnifeImage = z.infer<typeof KnifeImageSchema>;
+export type ImageRef = z.infer<typeof ImageRefSchema>;
 
 export const IMAGE_MIME_TYPES = {
   "image/jpeg": "jpg",
@@ -46,7 +53,7 @@ export const KnifeSchema = z.object({
   backlog: z.boolean().optional().default(false),
   backlogPosition: z.number().int().positive().optional(),
   sessions: z.array(SharpeningSessionSchema).default([]),
-  images: z.array(KnifeImageSchema).default([]),
+  images: z.array(ImageRefSchema).default([]),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -99,7 +106,28 @@ export const SteelInputSchema = SteelSchema.omit({
 });
 export type SteelInput = z.infer<typeof SteelInputSchema>;
 
-export interface KnifeImageBlob {
+export const StoneSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  grit: z.number().positive(),
+  type: z.string().optional().default(""),
+  notes: z.string().optional().default(""),
+  images: z.array(ImageRefSchema).default([]),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type Stone = z.infer<typeof StoneSchema>;
+
+export const StoneInputSchema = StoneSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  id: z.string().optional(),
+});
+export type StoneInput = z.infer<typeof StoneInputSchema>;
+
+export interface ImageBlob {
   bytes: Buffer;
   contentType: ImageMimeType;
 }
@@ -122,7 +150,7 @@ export interface Storage {
     knifeId: string,
     filename: string,
     size?: ImageSize,
-  ): Promise<KnifeImageBlob | null>;
+  ): Promise<ImageBlob | null>;
   deleteKnifeImage(knifeId: string, filename: string): Promise<boolean>;
 
   listOwners(): Promise<Owner[]>;
@@ -134,4 +162,22 @@ export interface Storage {
   getSteel(id: string): Promise<Steel | null>;
   saveSteel(steel: Steel): Promise<void>;
   deleteSteel(id: string): Promise<boolean>;
+
+  listStones(): Promise<Stone[]>;
+  getStone(id: string): Promise<Stone | null>;
+  saveStone(stone: Stone): Promise<void>;
+  deleteStone(id: string): Promise<boolean>;
+
+  saveStoneImage(
+    stoneId: string,
+    filename: string,
+    contentType: ImageMimeType,
+    bytes: Buffer,
+  ): Promise<void>;
+  readStoneImage(
+    stoneId: string,
+    filename: string,
+    size?: ImageSize,
+  ): Promise<ImageBlob | null>;
+  deleteStoneImage(stoneId: string, filename: string): Promise<boolean>;
 }

@@ -3,7 +3,7 @@
 import { Atom, ChevronDown, ChevronRight, Factory, Tags, User } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { KnifeImage } from "@/components/knife-image";
+import { Photo } from "@/components/photo";
 import { Stars } from "@/components/stars";
 import { api } from "@/lib/api-client";
 import { slugify } from "@/lib/storage/ids";
@@ -66,7 +66,7 @@ export function KnifeCard({
       )}
     >
       {cover && (
-        <KnifeImage
+        <Photo
           src={api.imageUrl(knife.id, cover.filename, featured ? undefined : "thumb")}
           alt={cover.caption || knife.name}
           className={cn(

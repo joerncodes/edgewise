@@ -1,18 +1,18 @@
 "use client";
 
-import { ArrowLeft, Atom, Factory, Inbox, PocketKnife, Tags, User } from "lucide-react";
+import { ArrowLeft, Atom, Factory, Inbox, Layers, PocketKnife, Tags, User } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { KnifeImage } from "@/components/knife-image";
+import { Photo } from "@/components/photo";
 import { Markdown } from "@/components/markdown";
 import { PropertyList, PropertyRow } from "@/components/property-row";
 import { Stars } from "@/components/stars";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api-client";
 import { slugify } from "@/lib/storage/ids";
-import type { Knife, Owner } from "@/lib/storage/types";
+import type { Knife, Owner, Stone } from "@/lib/storage/types";
 
 const dateFmt = new Intl.DateTimeFormat("de-DE", { dateStyle: "short" });
 
@@ -26,8 +26,14 @@ export default function KnifeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [knife, setKnife] = useState<Knife | null>(null);
   const [owner, setOwner] = useState<Owner | null>(null);
+  const [stones, setStones] = useState<Stone[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
+
+  const stoneById = useMemo(
+    () => Object.fromEntries(stones.map((s) => [s.id, s])),
+    [stones],
+  );
 
   async function toggleBacklog() {
     if (!knife || toggling) return;
@@ -51,13 +57,22 @@ export default function KnifeDetailPage() {
       .getKnife(id)
       .then(async (k) => {
         setKnife(k);
+        const hasStones = k.sessions.some((s) => s.stones?.length);
+        const tasks: Promise<unknown>[] = [];
         if (k.ownerId) {
-          try {
-            setOwner(await api.getOwner(k.ownerId));
-          } catch {
-            // owner may have been deleted directly via files; ignore
-          }
+          tasks.push(
+            api
+              .getOwner(k.ownerId)
+              .then(setOwner)
+              .catch(() => {
+                // owner may have been deleted directly via files; ignore
+              }),
+          );
         }
+        if (hasStones) {
+          tasks.push(api.listStones().then(setStones).catch(() => {}));
+        }
+        await Promise.all(tasks);
       })
       .catch((err) => toast.error(err instanceof Error ? err.message : "Failed to load"))
       .finally(() => setLoading(false));
@@ -74,7 +89,7 @@ export default function KnifeDetailPage() {
   return (
     <div className="space-y-12">
       {hero && (
-        <KnifeImage
+        <Photo
           src={api.imageUrl(knife.id, hero.filename)}
           alt={hero.caption || knife.name}
           className="w-full overflow-hidden rounded-md bg-muted/40"
@@ -201,7 +216,7 @@ export default function KnifeDetailPage() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {galleryImages.map((img) => (
               <figure key={img.filename} className="space-y-1.5">
-                <KnifeImage
+                <Photo
                   src={api.imageUrl(knife.id, img.filename)}
                   alt={img.caption || knife.name}
                   className="w-full overflow-hidden rounded-md bg-muted/40"
@@ -237,6 +252,9 @@ export default function KnifeDetailPage() {
                   </span>
                   {s.rating !== undefined && <Stars value={s.rating} size="md" />}
                 </div>
+                {s.stones?.length ? (
+                  <SessionStones stones={s.stones} stoneById={stoneById} />
+                ) : null}
                 {s.notes && (
                   <p className="mt-1 text-sm text-muted-foreground">{s.notes}</p>
                 )}
@@ -261,5 +279,43 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
     <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
       {children}
     </h2>
+  );
+}
+
+function SessionStones({
+  stones,
+  stoneById,
+}: {
+  stones: string[];
+  stoneById: Record<string, Stone>;
+}) {
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-1 text-xs">
+      <Layers className="h-3 w-3 shrink-0 text-muted-foreground/60" />
+      {stones.map((sid, i) => {
+        const s = stoneById[sid];
+        return (
+          <span key={`${sid}-${i}`} className="inline-flex items-center gap-1">
+            {i > 0 && <span className="text-muted-foreground/40">→</span>}
+            {s ? (
+              <Link
+                href={`/stones/${sid}`}
+                className="inline-flex items-center rounded-md border border-border px-1.5 py-0.5 font-mono text-muted-foreground hover:text-foreground hover:underline"
+                title={s.name}
+              >
+                {s.grit}
+              </Link>
+            ) : (
+              <span
+                className="inline-flex items-center rounded-md border border-border px-1.5 py-0.5 font-mono text-muted-foreground/60 line-through"
+                title="Unknown stone"
+              >
+                {sid}
+              </span>
+            )}
+          </span>
+        );
+      })}
+    </div>
   );
 }

@@ -15,6 +15,16 @@ export async function POST(req: Request, { params }: Ctx) {
     const knife = await storage.getKnife(id);
     if (!knife) return notFound("knife not found");
 
+    if (session.stones?.length) {
+      const missing: string[] = [];
+      for (const stoneId of session.stones) {
+        if (!(await storage.getStone(stoneId))) missing.push(stoneId);
+      }
+      if (missing.length > 0) {
+        return badRequest(`stone(s) not found: ${missing.join(", ")}`);
+      }
+    }
+
     const updated = {
       ...knife,
       // Sharpening obviously falsifies "waiting to be sharpened" —
