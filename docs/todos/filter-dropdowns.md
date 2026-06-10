@@ -1,9 +1,28 @@
 ---
 filetype: todo
-status: open
+status: done
+completedOn: 2026-06-10
 ---
 
 # Manufacturer, steel, and handle filter dropdowns on `/` and `/backlog`
+
+> **Mostly done.** Implemented 2026-06-10. `/` and `/backlog` now carry
+> Manufacturer (`Factory`) and Steel (`Atom`) dropdowns next to the
+> owner one, with "All …" reset entries and per-value counts on the
+> options. Filters AND together. The dropdowns auto-hide when their
+> facet is empty so the toolbar stays tidy on a fresh install. The
+> facet values are derived client-side via `computeFacets()` in
+> `src/lib/facets.ts` — a pure helper sized to also back the future
+> `/api/facets` endpoint ([[distinct-values-api]]). On `/backlog` the
+> facets are derived from the backlog slice only, matching the
+> existing "owners with backlog" pattern; activating any filter
+> pauses drag-and-drop (consistent with the search/owner behaviour
+> shipped in [[backlog-manual-order]]).
+>
+> **Handle dropdown is deferred** until [[handle-material]] lands —
+> there's no `handle` field on `Knife` yet, so the dropdown would
+> have nothing to render. Once that ships, copy the manufacturer
+> block, swap the icon, and point at `facets.handles`.
 
 Today the homepage has one filter dropdown (owner) plus the
 free-text search. The search box already matches substring across

@@ -1,6 +1,14 @@
 "use client";
 
-import { ChevronRight, Inbox, PocketKnife, Sparkles, User } from "lucide-react";
+import {
+  Atom,
+  ChevronRight,
+  Factory,
+  Inbox,
+  PocketKnife,
+  Sparkles,
+  User,
+} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
@@ -15,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { api } from "@/lib/api-client";
 import { inBacklog } from "@/lib/backlog";
+import { computeFacets } from "@/lib/facets";
 import type { Knife, Owner } from "@/lib/storage/types";
 
 type SortKey = "overdue" | "recent" | "owner" | "added";
@@ -33,6 +42,8 @@ export default function HomePage() {
 
   const [q, setQ] = useState("");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
+  const [manufacturerFilter, setManufacturerFilter] = useState<string>("all");
+  const [steelFilter, setSteelFilter] = useState<string>("all");
   const [sort, setSort] = useState<SortKey>("recent");
 
   useEffect(() => {
@@ -49,10 +60,14 @@ export default function HomePage() {
     [owners],
   );
 
+  const facets = useMemo(() => computeFacets(knives), [knives]);
+
   const filteredSorted = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const filtered = knives.filter((k) => {
       if (ownerFilter !== "all" && k.ownerId !== ownerFilter) return false;
+      if (manufacturerFilter !== "all" && k.manufacturer !== manufacturerFilter) return false;
+      if (steelFilter !== "all" && k.steel !== steelFilter) return false;
       if (!needle) return true;
       const ownerName = ownerById[k.ownerId]?.name ?? k.ownerId;
       return (
@@ -88,7 +103,7 @@ export default function HomePage() {
       case "added":
         return [...filtered].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     }
-  }, [knives, ownerById, ownerFilter, q, sort]);
+  }, [knives, ownerById, ownerFilter, manufacturerFilter, steelFilter, q, sort]);
 
   const now = useMemo(() => new Date(), []);
 
@@ -98,9 +113,13 @@ export default function HomePage() {
   );
 
   // Hero: the most recently sharpened knife with a cover image. Pinned
-  // independent of sort, hidden when search or owner filter is active
+  // independent of sort, hidden when search or any filter is active
   // (the hero is a landing-page focal point, not a search result).
-  const isFilterActive = q.trim() !== "" || ownerFilter !== "all";
+  const isFilterActive =
+    q.trim() !== "" ||
+    ownerFilter !== "all" ||
+    manufacturerFilter !== "all" ||
+    steelFilter !== "all";
   const heroKnife = useMemo(() => {
     if (isFilterActive) return undefined;
     const candidates = knives.filter((k) => k.images.length > 0 && lastSession(k));
@@ -182,6 +201,74 @@ export default function HomePage() {
             ))}
           </SelectContent>
         </Select>
+        {facets.manufacturers.length > 0 && (
+          <Select
+            value={manufacturerFilter}
+            onValueChange={(v) =>
+              setManufacturerFilter(typeof v === "string" ? v : "all")
+            }
+          >
+            <SelectTrigger className="h-9">
+              <SelectValue>
+                {(value) => (
+                  <>
+                    <Factory className="h-3.5 w-3.5" />
+                    {value === "all" ? "All makers" : (value as string)}
+                  </>
+                )}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">
+                <Factory className="h-3.5 w-3.5" />
+                All makers
+              </SelectItem>
+              {facets.manufacturers.map((f) => (
+                <SelectItem key={f.value} value={f.value}>
+                  <Factory className="h-3.5 w-3.5" />
+                  {f.value}
+                  <span className="ml-auto pl-2 font-mono text-xs text-muted-foreground">
+                    {f.count}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {facets.steels.length > 0 && (
+          <Select
+            value={steelFilter}
+            onValueChange={(v) =>
+              setSteelFilter(typeof v === "string" ? v : "all")
+            }
+          >
+            <SelectTrigger className="h-9">
+              <SelectValue>
+                {(value) => (
+                  <>
+                    <Atom className="h-3.5 w-3.5" />
+                    {value === "all" ? "All steels" : (value as string)}
+                  </>
+                )}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">
+                <Atom className="h-3.5 w-3.5" />
+                All steels
+              </SelectItem>
+              {facets.steels.map((f) => (
+                <SelectItem key={f.value} value={f.value}>
+                  <Atom className="h-3.5 w-3.5" />
+                  {f.value}
+                  <span className="ml-auto pl-2 font-mono text-xs text-muted-foreground">
+                    {f.count}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <Select
           value={sort}
           onValueChange={(v) => setSort((typeof v === "string" ? v : "overdue") as SortKey)}
@@ -210,7 +297,7 @@ export default function HomePage() {
       ) : filteredSorted.length === 0 ? (
         <EmptyState
           title="Nothing matches"
-          hint="Clear the search or change the owner filter."
+          hint="Clear the search or change the filters."
         />
       ) : (
         <div className="space-y-6">

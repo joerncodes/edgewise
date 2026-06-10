@@ -17,7 +17,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Inbox, User } from "lucide-react";
+import { Atom, Factory, GripVertical, Inbox, User } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/select";
 import { api } from "@/lib/api-client";
 import { inBacklog, sortByPosition } from "@/lib/backlog";
+import { computeFacets } from "@/lib/facets";
 import type { Knife, Owner } from "@/lib/storage/types";
 
 type SortKey = "manual" | "oldest" | "newest" | "owner";
@@ -50,6 +51,8 @@ export default function BacklogPage() {
 
   const [q, setQ] = useState("");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
+  const [manufacturerFilter, setManufacturerFilter] = useState<string>("all");
+  const [steelFilter, setSteelFilter] = useState<string>("all");
   const [sort, setSort] = useState<SortKey>("manual");
 
   useEffect(() => {
@@ -68,10 +71,17 @@ export default function BacklogPage() {
 
   const backlog = useMemo(() => knives.filter(inBacklog), [knives]);
 
+  // Facet values come from the *backlog* slice, not all knives — a
+  // steel that only shows up on sharpened knives shouldn't pad the
+  // dropdown here. Same idea as `ownersWithBacklog` below.
+  const facets = useMemo(() => computeFacets(backlog), [backlog]);
+
   const filteredSorted = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const filtered = backlog.filter((k) => {
       if (ownerFilter !== "all" && k.ownerId !== ownerFilter) return false;
+      if (manufacturerFilter !== "all" && k.manufacturer !== manufacturerFilter) return false;
+      if (steelFilter !== "all" && k.steel !== steelFilter) return false;
       if (!needle) return true;
       const ownerName = ownerById[k.ownerId]?.name ?? k.ownerId;
       return (
@@ -96,7 +106,7 @@ export default function BacklogPage() {
       case "owner":
         return [...filtered].sort((a, b) => cmpOwner(a, b) || a.name.localeCompare(b.name));
     }
-  }, [backlog, ownerById, ownerFilter, q, sort]);
+  }, [backlog, ownerById, ownerFilter, manufacturerFilter, steelFilter, q, sort]);
 
   const now = useMemo(() => new Date(), []);
 
@@ -109,7 +119,11 @@ export default function BacklogPage() {
 
   // Drag-and-drop is only meaningful when the visual order matches
   // storage — i.e. manual sort with no filter or search narrowing it.
-  const filtersActive = q.trim() !== "" || ownerFilter !== "all";
+  const filtersActive =
+    q.trim() !== "" ||
+    ownerFilter !== "all" ||
+    manufacturerFilter !== "all" ||
+    steelFilter !== "all";
   const dndEnabled = sort === "manual" && !filtersActive;
 
   const sensors = useSensors(
@@ -211,6 +225,74 @@ export default function BacklogPage() {
                 </SelectContent>
               </Select>
             )}
+            {facets.manufacturers.length > 0 && (
+              <Select
+                value={manufacturerFilter}
+                onValueChange={(v) =>
+                  setManufacturerFilter(typeof v === "string" ? v : "all")
+                }
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue>
+                    {(value) => (
+                      <>
+                        <Factory className="h-3.5 w-3.5" />
+                        {value === "all" ? "All makers" : (value as string)}
+                      </>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    <Factory className="h-3.5 w-3.5" />
+                    All makers
+                  </SelectItem>
+                  {facets.manufacturers.map((f) => (
+                    <SelectItem key={f.value} value={f.value}>
+                      <Factory className="h-3.5 w-3.5" />
+                      {f.value}
+                      <span className="ml-auto pl-2 font-mono text-xs text-muted-foreground">
+                        {f.count}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {facets.steels.length > 0 && (
+              <Select
+                value={steelFilter}
+                onValueChange={(v) =>
+                  setSteelFilter(typeof v === "string" ? v : "all")
+                }
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue>
+                    {(value) => (
+                      <>
+                        <Atom className="h-3.5 w-3.5" />
+                        {value === "all" ? "All steels" : (value as string)}
+                      </>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    <Atom className="h-3.5 w-3.5" />
+                    All steels
+                  </SelectItem>
+                  {facets.steels.map((f) => (
+                    <SelectItem key={f.value} value={f.value}>
+                      <Atom className="h-3.5 w-3.5" />
+                      {f.value}
+                      <span className="ml-auto pl-2 font-mono text-xs text-muted-foreground">
+                        {f.count}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <Select
               value={sort}
               onValueChange={(v) =>
@@ -233,7 +315,7 @@ export default function BacklogPage() {
 
           {sort === "manual" && filtersActive && (
             <p className="text-xs text-muted-foreground">
-              Drag-and-drop is paused while a search or owner filter is active —
+              Drag-and-drop is paused while a search or filter is active —
               clear them to reorder.
             </p>
           )}
@@ -241,7 +323,7 @@ export default function BacklogPage() {
           {filteredSorted.length === 0 ? (
             <EmptyState
               title="Nothing matches"
-              hint="Clear the search or change the owner filter."
+              hint="Clear the search or change the filters."
             />
           ) : dndEnabled ? (
             <DndContext
