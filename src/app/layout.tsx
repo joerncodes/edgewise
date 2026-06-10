@@ -49,7 +49,7 @@ export default function RootLayout({
         <ThemeProvider defaultTheme="dark">
           <SessionProvider>
             <header>
-              <div className="mx-auto flex h-12 max-w-5xl items-center gap-6 px-6 text-sm">
+              <div className="mx-auto flex h-12 max-w-7xl items-center gap-6 px-6 text-sm">
                 <Link
                   href="/"
                   className="flex items-center gap-1.5 font-heading text-lg font-semibold uppercase tracking-wider"
@@ -79,7 +79,7 @@ export default function RootLayout({
                 </div>
               </div>
             </header>
-            <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">{children}</main>
+            <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-10">{children}</main>
             <Toaster richColors position="top-right" />
           </SessionProvider>
         </ThemeProvider>

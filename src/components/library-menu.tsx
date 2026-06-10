@@ -27,8 +27,8 @@ export function LibraryMenu() {
       <DropdownMenuTrigger
         className={
           active
-            ? "inline-flex items-center gap-1.5 font-medium text-foreground outline-none"
-            : "inline-flex items-center gap-1.5 text-muted-foreground outline-none transition-colors hover:text-foreground"
+            ? "inline-flex cursor-pointer items-center gap-1.5 font-medium text-foreground outline-none"
+            : "inline-flex cursor-pointer items-center gap-1.5 text-muted-foreground outline-none transition-colors hover:text-foreground"
         }
       >
         <Library className="h-4 w-4" />

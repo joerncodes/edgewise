@@ -1,9 +1,8 @@
 "use client";
 
 import {
-  Atom,
   ChevronRight,
-  Factory,
+  Filter,
   Inbox,
   PocketKnife,
   Sparkles,
@@ -13,6 +12,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { KnifeCard, lastSession } from "@/components/knife-card";
+import { KnifeFilters } from "@/components/knife-filters";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -21,9 +22,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { api } from "@/lib/api-client";
 import { inBacklog } from "@/lib/backlog";
-import { computeFacets } from "@/lib/facets";
+import {
+  applyFilters,
+  emptyFilterState,
+  filterStateIsEmpty,
+  totalActiveFilters,
+  type FilterState,
+} from "@/lib/facets";
 import type { Knife, Owner } from "@/lib/storage/types";
 
 type SortKey = "overdue" | "recent" | "owner" | "added";
@@ -41,10 +55,9 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
 
   const [q, setQ] = useState("");
-  const [ownerFilter, setOwnerFilter] = useState<string>("all");
-  const [manufacturerFilter, setManufacturerFilter] = useState<string>("all");
-  const [steelFilter, setSteelFilter] = useState<string>("all");
+  const [filters, setFilters] = useState<FilterState>(() => emptyFilterState());
   const [sort, setSort] = useState<SortKey>("recent");
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   useEffect(() => {
     Promise.all([api.listKnives(), api.listOwners()])
@@ -60,14 +73,10 @@ export default function HomePage() {
     [owners],
   );
 
-  const facets = useMemo(() => computeFacets(knives), [knives]);
-
   const filteredSorted = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    const filtered = knives.filter((k) => {
-      if (ownerFilter !== "all" && k.ownerId !== ownerFilter) return false;
-      if (manufacturerFilter !== "all" && k.manufacturer !== manufacturerFilter) return false;
-      if (steelFilter !== "all" && k.steel !== steelFilter) return false;
+    const facetFiltered = applyFilters(knives, filters);
+    const filtered = facetFiltered.filter((k) => {
       if (!needle) return true;
       const ownerName = ownerById[k.ownerId]?.name ?? k.ownerId;
       return (
@@ -87,7 +96,6 @@ export default function HomePage() {
 
     switch (sort) {
       case "overdue":
-        // Never-sharpened first, then oldest last-sharpened date.
         return [...filtered].sort((a, b) => {
           const la = lastDate(a);
           const lb = lastDate(b);
@@ -103,7 +111,7 @@ export default function HomePage() {
       case "added":
         return [...filtered].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     }
-  }, [knives, ownerById, ownerFilter, manufacturerFilter, steelFilter, q, sort]);
+  }, [knives, ownerById, filters, q, sort]);
 
   const now = useMemo(() => new Date(), []);
 
@@ -112,14 +120,10 @@ export default function HomePage() {
     [knives],
   );
 
-  // Hero: the most recently sharpened knife with a cover image. Pinned
-  // independent of sort, hidden when search or any filter is active
-  // (the hero is a landing-page focal point, not a search result).
-  const isFilterActive =
-    q.trim() !== "" ||
-    ownerFilter !== "all" ||
-    manufacturerFilter !== "all" ||
-    steelFilter !== "all";
+  // Hero is hidden while the user is actively narrowing — search text
+  // or any facet selection. The hero is a landing-page focal point, not
+  // a search result.
+  const isFilterActive = q.trim() !== "" || !filterStateIsEmpty(filters);
   const heroKnife = useMemo(() => {
     if (isFilterActive) return undefined;
     const candidates = knives.filter((k) => k.images.length > 0 && lastSession(k));
@@ -131,6 +135,8 @@ export default function HomePage() {
   const gridKnives = heroKnife
     ? filteredSorted.filter((k) => k.id !== heroKnife.id)
     : filteredSorted;
+
+  const activeFilterCount = totalActiveFilters(filters);
 
   return (
     <div className="space-y-8">
@@ -166,171 +172,118 @@ export default function HomePage() {
         </div>
       </header>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Input
-          type="search"
-          placeholder="Search owner, name, type, steel…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          className="h-9 max-w-sm flex-1 min-w-[12rem]"
-        />
-        <Select
-          value={ownerFilter}
-          onValueChange={(v) => setOwnerFilter(typeof v === "string" ? v : "all")}
-        >
-          <SelectTrigger className="h-9">
-            <SelectValue>
-              {(value) => (
-                <>
-                  <User className="h-3.5 w-3.5" />
-                  {value === "all" ? "All owners" : (ownerById[value as string]?.name ?? value)}
-                </>
-              )}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">
-              <User className="h-3.5 w-3.5" />
-              All owners
-            </SelectItem>
-            {owners.map((o) => (
-              <SelectItem key={o.id} value={o.id}>
-                <User className="h-3.5 w-3.5" />
-                {o.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {facets.manufacturers.length > 0 && (
-          <Select
-            value={manufacturerFilter}
-            onValueChange={(v) =>
-              setManufacturerFilter(typeof v === "string" ? v : "all")
-            }
-          >
-            <SelectTrigger className="h-9">
-              <SelectValue>
-                {(value) => (
-                  <>
-                    <Factory className="h-3.5 w-3.5" />
-                    {value === "all" ? "All makers" : (value as string)}
-                  </>
-                )}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                <Factory className="h-3.5 w-3.5" />
-                All makers
-              </SelectItem>
-              {facets.manufacturers.map((f) => (
-                <SelectItem key={f.value} value={f.value}>
-                  <Factory className="h-3.5 w-3.5" />
-                  {f.value}
-                  <span className="ml-auto pl-2 font-mono text-xs text-muted-foreground">
-                    {f.count}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-        {facets.steels.length > 0 && (
-          <Select
-            value={steelFilter}
-            onValueChange={(v) =>
-              setSteelFilter(typeof v === "string" ? v : "all")
-            }
-          >
-            <SelectTrigger className="h-9">
-              <SelectValue>
-                {(value) => (
-                  <>
-                    <Atom className="h-3.5 w-3.5" />
-                    {value === "all" ? "All steels" : (value as string)}
-                  </>
-                )}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                <Atom className="h-3.5 w-3.5" />
-                All steels
-              </SelectItem>
-              {facets.steels.map((f) => (
-                <SelectItem key={f.value} value={f.value}>
-                  <Atom className="h-3.5 w-3.5" />
-                  {f.value}
-                  <span className="ml-auto pl-2 font-mono text-xs text-muted-foreground">
-                    {f.count}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-        <Select
-          value={sort}
-          onValueChange={(v) => setSort((typeof v === "string" ? v : "overdue") as SortKey)}
-        >
-          <SelectTrigger className="h-9">
-            <SelectValue>
-              {(value) => SORT_LABELS[value as SortKey] ?? value}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="overdue">{SORT_LABELS.overdue}</SelectItem>
-            <SelectItem value="recent">{SORT_LABELS.recent}</SelectItem>
-            <SelectItem value="owner">{SORT_LABELS.owner}</SelectItem>
-            <SelectItem value="added">{SORT_LABELS.added}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <div className="lg:grid lg:grid-cols-[240px_1fr] lg:gap-8">
+        <aside className="hidden lg:block">
+          <div className="sticky top-4">
+            <KnifeFilters
+              knives={knives}
+              ownerById={ownerById}
+              state={filters}
+              onChange={setFilters}
+            />
+          </div>
+        </aside>
 
-      {loading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      ) : knives.length === 0 ? (
-        <EmptyState
-          title="No knives yet"
-          hint="Add your first one through the API — it'll show up here right away."
-        />
-      ) : filteredSorted.length === 0 ? (
-        <EmptyState
-          title="Nothing matches"
-          hint="Clear the search or change the filters."
-        />
-      ) : (
-        <div className="space-y-6">
-          {heroKnife && (
-            <div className="space-y-2 md:relative md:left-1/2 md:-translate-x-1/2 md:w-[min(80rem,calc(100vw-2rem))]">
-              <h2 className="flex items-center gap-1.5 font-heading text-xs uppercase tracking-wider text-muted-foreground">
-                <Sparkles className="h-3.5 w-3.5" />
-                Most recently sharpened
-              </h2>
-              <KnifeCard
-                knife={heroKnife}
-                owner={ownerById[heroKnife.ownerId]}
-                now={now}
-                featured
+        <main className="min-w-0 space-y-6">
+          <div className="flex flex-wrap items-center gap-3">
+            <Input
+              type="search"
+              placeholder="Search name, owner, type, steel…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              className="h-9 max-w-sm flex-1 min-w-[12rem]"
+            />
+            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+              <SheetTrigger
+                render={
+                  <Button variant="outline" size="sm" className="h-9 lg:hidden">
+                    <Filter className="h-3.5 w-3.5" />
+                    Filters
+                    {activeFilterCount > 0 && (
+                      <span className="ml-1 rounded-md bg-brass/15 px-1.5 font-mono text-[11px] text-brass">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </Button>
+                }
               />
+              <SheetContent side="right" className="w-[88vw] sm:w-96 overflow-y-auto p-4">
+                <SheetHeader className="p-0">
+                  <SheetTitle>Filters</SheetTitle>
+                </SheetHeader>
+                <div className="mt-2">
+                  <KnifeFilters
+                    knives={knives}
+                    ownerById={ownerById}
+                    state={filters}
+                    onChange={setFilters}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
+            <Select
+              value={sort}
+              onValueChange={(v) => setSort((typeof v === "string" ? v : "overdue") as SortKey)}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue>
+                  {(value) => SORT_LABELS[value as SortKey] ?? value}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="overdue">{SORT_LABELS.overdue}</SelectItem>
+                <SelectItem value="recent">{SORT_LABELS.recent}</SelectItem>
+                <SelectItem value="owner">{SORT_LABELS.owner}</SelectItem>
+                <SelectItem value="added">{SORT_LABELS.added}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : knives.length === 0 ? (
+            <EmptyState
+              title="No knives yet"
+              hint="Add your first one through the API — it'll show up here right away."
+            />
+          ) : filteredSorted.length === 0 ? (
+            <EmptyState
+              title="Nothing matches"
+              hint="Clear the search or change the filters."
+            />
+          ) : (
+            <div className="space-y-6">
+              {heroKnife && (
+                <div className="space-y-2">
+                  <h2 className="flex items-center gap-1.5 font-heading text-xs uppercase tracking-wider text-muted-foreground">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Most recently sharpened
+                  </h2>
+                  <KnifeCard
+                    knife={heroKnife}
+                    owner={ownerById[heroKnife.ownerId]}
+                    now={now}
+                    featured
+                  />
+                </div>
+              )}
+              {gridKnives.length > 0 && (
+                <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {gridKnives.map((k) => (
+                    <li key={k.id}>
+                      <KnifeCard
+                        knife={k}
+                        owner={ownerById[k.ownerId]}
+                        now={now}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
-          {gridKnives.length > 0 && (
-            <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {gridKnives.map((k) => (
-                <li key={k.id}>
-                  <KnifeCard
-                    knife={k}
-                    owner={ownerById[k.ownerId]}
-                    now={now}
-                  />
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+        </main>
+      </div>
     </div>
   );
 }
-
