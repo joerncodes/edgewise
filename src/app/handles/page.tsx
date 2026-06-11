@@ -6,24 +6,30 @@ import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { api } from "@/lib/api-client";
 import { groupHandles } from "@/lib/handles";
-import type { Knife } from "@/lib/storage/types";
+import type { Handle, Knife } from "@/lib/storage/types";
 
 export default function HandlesPage() {
   const [knives, setKnives] = useState<Knife[]>([]);
+  const [handles, setHandles] = useState<Handle[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api
-      .listKnives()
-      .then(setKnives)
+    Promise.all([api.listKnives(), api.listHandles()])
+      .then(([k, h]) => {
+        setKnives(k);
+        setHandles(h);
+      })
       .finally(() => setLoading(false));
   }, []);
 
-  const handles = useMemo(() => {
-    return groupHandles(knives).sort(
-      (a, b) => b.count - a.count || a.displayName.localeCompare(b.displayName),
+  const grouped = useMemo(() => {
+    return groupHandles(knives, handles).sort(
+      (a, b) =>
+        b.count - a.count ||
+        Number(b.hasRecord) - Number(a.hasRecord) ||
+        a.displayName.localeCompare(b.displayName),
     );
-  }, [knives]);
+  }, [knives, handles]);
 
   return (
     <div className="space-y-6">
@@ -34,14 +40,14 @@ export default function HandlesPage() {
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
-      ) : handles.length === 0 ? (
+      ) : grouped.length === 0 ? (
         <EmptyState
           title="No handle materials yet"
           hint="Add a handle to a knife's frontmatter via the API and it will appear here."
         />
       ) : (
         <ul className="-mx-2 divide-y divide-border/70">
-          {handles.map((h) => (
+          {grouped.map((h) => (
             <li key={h.slug}>
               <Link
                 href={`/handles/${h.slug}`}
@@ -52,6 +58,11 @@ export default function HandlesPage() {
                   <div className="truncate font-medium text-foreground">
                     {h.displayName}
                   </div>
+                  {!h.hasRecord && (
+                    <div className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                      No notes yet
+                    </div>
+                  )}
                 </div>
                 <div className="font-mono text-xs text-muted-foreground">
                   {h.count} {h.count === 1 ? "knife" : "knives"}

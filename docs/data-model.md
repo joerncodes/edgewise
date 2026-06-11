@@ -11,6 +11,8 @@ $DATA_DIR/
     <slug>.md
   steels/
     <slug>.md
+  handles/
+    <slug>.md
   abrasives/
     <slug>.md
   images/
@@ -227,6 +229,46 @@ Slug canonicalisation: steel names are weird (`80CrV2`, `80Crv2`,
 string. Two knives whose `steel` strings slugify to the same value
 are considered the same steel.
 
+## Handle
+
+`handles/<id>.md`:
+
+```yaml
+---
+id: g10
+name: G10
+createdAt: 2026-06-11T12:00:00.000Z
+updatedAt: 2026-06-11T12:00:00.000Z
+---
+
+Fiberglass-resin laminate. Common on tactical folders and modern
+kitchen knives. Grippy when wet, basically indestructible, no special
+care.
+```
+
+Fields:
+
+| field       | type   | required | notes                                    |
+|-------------|--------|----------|------------------------------------------|
+| `id`        | string | yes      | slug, file name without `.md`            |
+| `name`      | string | yes      | canonical display spelling               |
+| `notes`     | string | no       | the markdown body — grip, water, care    |
+| `createdAt` | ISO    | yes      |                                          |
+| `updatedAt` | ISO    | yes      |                                          |
+
+`Knife.handle` is a **soft** reference, same shape as `Knife.steel`:
+the string should match a `Handle.id` (i.e.
+`slugify(Knife.handle) === Handle.id`), but the API does NOT reject
+unknown strings on knife create/update. This lets you record a knife
+with an unfamiliar handle before the notes exist; the handle record
+can be created later and the existing knives pick it up automatically.
+
+Same slug-canonicalisation rule as steels: display uses the spelling
+from `Knife.handle` or `Handle.name`; grouping and routing use
+`slugify()` against the handle string. No `composition` field — that's
+a steel concept; handle materials are described entirely in the
+markdown body.
+
 ## Abrasive
 
 `abrasives/<id>.md`:
@@ -317,6 +359,8 @@ and the hero on `/abrasives/<id>`.
   knives first.
 - Deleting a steel that any knife references returns `409`. Change or
   clear the knife's `steel` field first.
+- Deleting a handle that any knife references returns `409`. Change or
+  clear the knife's `handle` field first.
 - A session's `abrasives[]` are foreign keys: `POST /api/knives/{id}/sessions`
   rejects unknown abrasive IDs with `400`. Deleting an abrasive that any
   session still references returns `409` — remove or rewrite those

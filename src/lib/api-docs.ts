@@ -2,6 +2,8 @@ import { z } from "zod";
 import {
   AbrasiveInputSchema,
   AbrasiveSchema,
+  HandleInputSchema,
+  HandleSchema,
   KnifeInputSchema,
   KnifeSchema,
   OwnerInputSchema,
@@ -19,6 +21,8 @@ const SCHEMAS = {
   OwnerInput: OwnerInputSchema,
   Steel: SteelSchema,
   SteelInput: SteelInputSchema,
+  Handle: HandleSchema,
+  HandleInput: HandleInputSchema,
   Abrasive: AbrasiveSchema,
   AbrasiveInput: AbrasiveInputSchema,
   SharpeningSession: SharpeningSessionSchema,
@@ -60,6 +64,11 @@ const ENDPOINTS = `\
 | GET    | \`/api/steels/{id}\`                    | —                  | \`{ steel }\`              |
 | PATCH  | \`/api/steels/{id}\`                    | partial \`SteelInput\` | \`{ steel }\`          |
 | DELETE | \`/api/steels/{id}\`                    | —                  | 204 (409 if in use)      |
+| GET    | \`/api/handles\`                        | —                  | \`{ handles: Handle[] }\`  |
+| POST   | \`/api/handles\`                        | \`HandleInput\`      | \`{ handle }\` (201)       |
+| GET    | \`/api/handles/{id}\`                   | —                  | \`{ handle }\`             |
+| PATCH  | \`/api/handles/{id}\`                   | partial \`HandleInput\` | \`{ handle }\`        |
+| DELETE | \`/api/handles/{id}\`                   | —                  | 204 (409 if in use)      |
 | GET    | \`/api/abrasives\`                      | —                  | \`{ abrasives: Abrasive[] }\` |
 | POST   | \`/api/abrasives\`                      | \`AbrasiveInput\`    | \`{ abrasive }\` (201)     |
 | GET    | \`/api/abrasives/{id}\`                 | —                  | \`{ abrasive }\`           |
@@ -122,6 +131,12 @@ curl -s -X POST $BASE/api/steels \\
   -H "Authorization: Bearer $TOKEN" \\
   -H 'Content-Type: application/json' \\
   -d '{"name":"80CrV2","composition":"0.8% C, 0.5% Cr, 0.15% V","notes":"High-carbon — wipe dry, oil occasionally."}'
+
+# Add a handle material (or backfill notes for a derived one)
+curl -s -X POST $BASE/api/handles \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H 'Content-Type: application/json' \\
+  -d '{"name":"G10","notes":"Fiberglass-resin laminate. Grippy when wet, basically indestructible."}'
 
 # Add abrasives (stones and strops live in the same table), then
 # record a session that walks coarse → fine and finishes on a strop
@@ -272,6 +287,17 @@ to the alloy rather than next to a single knife. The link is by slug:
 \`slugify(Knife.steel) === Steel.id\`. Unknown strings are NOT rejected
 on knife create/patch; the steel page renders fine without a record
 and offers a no-notes-yet hint.
+
+## Handles
+
+\`Knife.handle\` is a free-form string for the handle material (G10,
+Micarta, Beech wood, "None" for blade-only blanks). The matching
+\`Handle\` record, when it exists, carries persistent markdown notes
+about the material — grip behaviour, water tolerance, sharpening-
+relevant quirks. Soft FK by slug: \`slugify(Knife.handle) === Handle.id\`.
+Unknown strings are not rejected on knife create/patch; the handle
+page falls back to a no-notes-yet hint when no record exists. Same
+shape as Steel, no \`composition\` field.
 
 ## Stats
 

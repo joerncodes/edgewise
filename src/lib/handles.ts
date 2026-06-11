@@ -1,20 +1,21 @@
 import { slugify } from "./storage/ids";
-import type { Knife } from "./storage/types";
+import type { Handle, Knife } from "./storage/types";
 
 export interface HandleEntry {
   slug: string;
   displayName: string;
   count: number;
   knifeIds: string[];
+  // True if a persisted Handle record exists for this slug. The list
+  // and detail pages show the persisted notes when this is true;
+  // otherwise the slug is purely derived from knife frontmatter.
+  hasRecord: boolean;
 }
 
-// Group knives by handle material with case-insensitive matching. The
-// display name is whichever spelling appears most often; ties resolved
-// by alphabetical order so the result is deterministic. Same shape as
-// `groupManufacturers` — handle is a free-form string field, not a
-// first-class entity, so the rollup happens client-side from the
-// knives list.
-export function groupHandles(knives: Knife[]): HandleEntry[] {
+// Group knives by `Knife.handle`, case-insensitive, then merge in any
+// persisted Handle records so handles with notes but no knives yet
+// still appear. Mirrors `groupSteels`.
+export function groupHandles(knives: Knife[], handles: Handle[]): HandleEntry[] {
   const buckets = new Map<
     string,
     { spellings: Map<string, number>; knifeIds: string[] }
@@ -34,24 +35,42 @@ export function groupHandles(knives: Knife[]): HandleEntry[] {
     b.knifeIds.push(k.id);
   }
 
+  const recordBySlug = new Map(handles.map((h) => [h.id, h]));
+
   const entries: HandleEntry[] = [];
   for (const [slug, b] of buckets) {
-    const spellings = [...b.spellings.entries()].sort((a, b) =>
-      b[1] - a[1] || a[0].localeCompare(b[0]),
+    const spellings = [...b.spellings.entries()].sort(
+      (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
     );
+    const record = recordBySlug.get(slug);
     entries.push({
       slug,
-      displayName: spellings[0][0],
+      displayName: record?.name ?? spellings[0][0],
       count: b.knifeIds.length,
       knifeIds: b.knifeIds,
+      hasRecord: Boolean(record),
+    });
+    recordBySlug.delete(slug);
+  }
+
+  // Handles with a record but no knife referencing them yet.
+  for (const [slug, record] of recordBySlug) {
+    entries.push({
+      slug,
+      displayName: record.name,
+      count: 0,
+      knifeIds: [],
+      hasRecord: true,
     });
   }
+
   return entries;
 }
 
 export function findHandle(
   knives: Knife[],
+  handles: Handle[],
   slug: string,
 ): HandleEntry | undefined {
-  return groupHandles(knives).find((h) => h.slug === slug);
+  return groupHandles(knives, handles).find((h) => h.slug === slug);
 }

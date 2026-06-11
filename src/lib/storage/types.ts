@@ -109,6 +109,24 @@ export const SteelInputSchema = SteelSchema.omit({
 });
 export type SteelInput = z.infer<typeof SteelInputSchema>;
 
+export const HandleSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  notes: z.string().optional().default(""),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type Handle = z.infer<typeof HandleSchema>;
+
+export const HandleInputSchema = HandleSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  id: z.string().optional(),
+});
+export type HandleInput = z.infer<typeof HandleInputSchema>;
+
 // Abrasive covers stones, strops, and anything else you push an edge
 // against to refine it. `type` discriminates ("waterstone", "diamond
 // plate", "ceramic", "strop"). `compound` and `substrate` are
@@ -172,6 +190,11 @@ export interface Storage {
   getSteel(id: string): Promise<Steel | null>;
   saveSteel(steel: Steel): Promise<void>;
   deleteSteel(id: string): Promise<boolean>;
+
+  listHandles(): Promise<Handle[]>;
+  getHandle(id: string): Promise<Handle | null>;
+  saveHandle(handle: Handle): Promise<void>;
+  deleteHandle(id: string): Promise<boolean>;
 
   listAbrasives(): Promise<Abrasive[]>;
   getAbrasive(id: string): Promise<Abrasive | null>;

@@ -96,6 +96,22 @@ record exists, but the API does not reject unknown strings. Steel
 records can carry persistent markdown notes (rust care, sharpening
 behaviour, etc.) that live independently of any knife.
 
+### Handles
+
+| Method | Path                 | Body           | Returns                  |
+|--------|----------------------|----------------|--------------------------|
+| GET    | `/api/handles`       | —              | `{ handles: Handle[] }`  |
+| POST   | `/api/handles`       | `HandleInput`  | `{ handle }` (201)       |
+| GET    | `/api/handles/{id}`  | —              | `{ handle }`             |
+| PATCH  | `/api/handles/{id}`  | partial input  | `{ handle }`             |
+| DELETE | `/api/handles/{id}`  | —              | 204 (409 if in use)      |
+
+`Knife.handle` is a soft FK exactly like `Knife.steel`:
+`slugify(Knife.handle) === Handle.id` when a record exists, but the
+API does not reject unknown strings. Handle records carry persistent
+markdown notes about the material — grip behaviour, water tolerance,
+sharpening-relevant quirks — and live independently of any knife.
+
 ### Diary
 
 | Method | Path          | Body | Returns                                |
@@ -177,6 +193,12 @@ SteelInput = {
   id?: string
   name: string
   composition?: string
+  notes?: string   // markdown
+}
+
+HandleInput = {
+  id?: string
+  name: string
   notes?: string   // markdown
 }
 ```

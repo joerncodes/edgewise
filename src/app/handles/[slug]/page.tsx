@@ -7,27 +7,37 @@ import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { KnivesView } from "@/components/knives-view";
 import { ListViewToggle, useViewMode } from "@/components/list-view-toggle";
+import { Markdown } from "@/components/markdown";
 import { api } from "@/lib/api-client";
 import { findHandle } from "@/lib/handles";
-import type { Knife, Owner } from "@/lib/storage/types";
+import type { Handle, Knife, Owner } from "@/lib/storage/types";
 
 export default function HandleDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const [knives, setKnives] = useState<Knife[]>([]);
   const [owners, setOwners] = useState<Owner[]>([]);
+  const [handles, setHandles] = useState<Handle[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useViewMode();
 
   useEffect(() => {
-    Promise.all([api.listKnives(), api.listOwners()])
-      .then(([k, o]) => {
+    Promise.all([api.listKnives(), api.listOwners(), api.listHandles()])
+      .then(([k, o, h]) => {
         setKnives(k);
         setOwners(o);
+        setHandles(h);
       })
       .finally(() => setLoading(false));
   }, []);
 
-  const entry = useMemo(() => findHandle(knives, slug), [knives, slug]);
+  const entry = useMemo(
+    () => findHandle(knives, handles, slug),
+    [knives, handles, slug],
+  );
+  const record = useMemo(
+    () => handles.find((h) => h.id === slug),
+    [handles, slug],
+  );
   const knivesWithHandle = useMemo(() => {
     if (!entry) return [];
     const ids = new Set(entry.knifeIds);
@@ -52,14 +62,14 @@ export default function HandleDetailPage() {
         </Link>
         <EmptyState
           title="Handle not found"
-          hint="No knife frontmatter matches this slug."
+          hint="No knife or handle record matches this slug."
         />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <header className="space-y-3">
         <Link
           href="/handles"
@@ -79,17 +89,34 @@ export default function HandleDetailPage() {
         </p>
       </header>
 
-      <div className="flex justify-end">
-        <ListViewToggle mode={viewMode} onModeChange={setViewMode} />
-      </div>
+      <section className="space-y-3">
+        {record?.notes ? (
+          <Markdown>{record.notes}</Markdown>
+        ) : (
+          <EmptyState
+            title="No notes yet"
+            hint="PATCH /api/handles/<id> with a markdown `notes` body to describe the material — grip, water tolerance, sharpening-relevant quirks."
+          />
+        )}
+      </section>
 
-      <KnivesView
-        knives={knivesWithHandle}
-        owners={owners}
-        now={now}
-        mode={viewMode}
-        gridClassName="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-      />
+      {knivesWithHandle.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-heading text-sm uppercase tracking-wider text-foreground/80">
+              Knives with this handle
+            </h2>
+            <ListViewToggle mode={viewMode} onModeChange={setViewMode} />
+          </div>
+          <KnivesView
+            knives={knivesWithHandle}
+            owners={owners}
+            now={now}
+            mode={viewMode}
+            gridClassName="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          />
+        </section>
+      )}
     </div>
   );
 }

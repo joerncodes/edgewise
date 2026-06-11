@@ -5,11 +5,13 @@ import sharp from "sharp";
 import YAML from "yaml";
 import {
   AbrasiveSchema,
+  HandleSchema,
   KnifeSchema,
   OwnerSchema,
   SteelSchema,
   mimeFromFilename,
   type Abrasive,
+  type Handle,
   type ImageMimeType,
   type ImageSize,
   type Knife,
@@ -74,6 +76,7 @@ export class MarkdownStorage implements Storage {
   private knivesDir: string;
   private ownersDir: string;
   private steelsDir: string;
+  private handlesDir: string;
   private abrasivesDir: string;
   private imagesDir: string;
   private abrasiveImagesDir: string;
@@ -83,6 +86,7 @@ export class MarkdownStorage implements Storage {
     this.knivesDir = path.join(this.dataDir, "knives");
     this.ownersDir = path.join(this.dataDir, "owners");
     this.steelsDir = path.join(this.dataDir, "steels");
+    this.handlesDir = path.join(this.dataDir, "handles");
     this.abrasivesDir = path.join(this.dataDir, "abrasives");
     this.imagesDir = path.join(this.dataDir, "images");
     this.abrasiveImagesDir = path.join(this.dataDir, "abrasive-images");
@@ -92,6 +96,7 @@ export class MarkdownStorage implements Storage {
     await fs.mkdir(this.knivesDir, { recursive: true });
     await fs.mkdir(this.ownersDir, { recursive: true });
     await fs.mkdir(this.steelsDir, { recursive: true });
+    await fs.mkdir(this.handlesDir, { recursive: true });
     await fs.mkdir(this.abrasivesDir, { recursive: true });
     await fs.mkdir(this.imagesDir, { recursive: true });
     await fs.mkdir(this.abrasiveImagesDir, { recursive: true });
@@ -107,6 +112,10 @@ export class MarkdownStorage implements Storage {
 
   private steelPath(id: string) {
     return path.join(this.steelsDir, `${id}.md`);
+  }
+
+  private handlePath(id: string) {
+    return path.join(this.handlesDir, `${id}.md`);
   }
 
   private abrasivePath(id: string) {
@@ -379,6 +388,56 @@ export class MarkdownStorage implements Storage {
   async deleteSteel(id: string): Promise<boolean> {
     try {
       await fs.unlink(this.steelPath(id));
+      return true;
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === "ENOENT") return false;
+      throw err;
+    }
+  }
+
+  private parseHandle(raw: string): Handle {
+    const parsed = matter(raw);
+    const data = normalizeDates({
+      ...parsed.data,
+      notes: parsed.content.trim(),
+    });
+    return HandleSchema.parse(data);
+  }
+
+  private serializeHandle(handle: Handle): string {
+    const { notes, ...rest } = handle;
+    const fm = YAML.stringify(rest);
+    return `---\n${fm}---\n\n${notes ?? ""}\n`;
+  }
+
+  async listHandles(): Promise<Handle[]> {
+    await this.ensureDirs();
+    const entries = await fs.readdir(this.handlesDir);
+    const handles = await Promise.all(
+      entries
+        .filter((f) => f.endsWith(".md"))
+        .map(async (f) => {
+          const raw = await fs.readFile(path.join(this.handlesDir, f), "utf8");
+          return this.parseHandle(raw);
+        }),
+    );
+    return handles.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async getHandle(id: string): Promise<Handle | null> {
+    await this.ensureDirs();
+    const raw = await this.readFileOrNull(this.handlePath(id));
+    return raw ? this.parseHandle(raw) : null;
+  }
+
+  async saveHandle(handle: Handle): Promise<void> {
+    await this.ensureDirs();
+    await fs.writeFile(this.handlePath(handle.id), this.serializeHandle(handle), "utf8");
+  }
+
+  async deleteHandle(id: string): Promise<boolean> {
+    try {
+      await fs.unlink(this.handlePath(id));
       return true;
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code === "ENOENT") return false;

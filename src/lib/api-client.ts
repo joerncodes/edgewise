@@ -2,7 +2,7 @@ import type { Diary } from "./diary";
 import type { Facets } from "./facets";
 import type { Janitor } from "./janitor";
 import type { Stats } from "./stats";
-import type { Abrasive, Knife, Owner, SharpeningSession, Steel } from "./storage/types";
+import type { Abrasive, Handle, Knife, Owner, SharpeningSession, Steel } from "./storage/types";
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
@@ -87,6 +87,22 @@ export const api = {
       body: JSON.stringify(body),
     }).then((r) => r.steel),
   deleteSteel: (id: string) => request<void>(`/api/steels/${id}`, { method: "DELETE" }),
+
+  listHandles: () =>
+    request<{ handles: Handle[] }>("/api/handles").then((r) => r.handles),
+  getHandle: (id: string) =>
+    request<{ handle: Handle }>(`/api/handles/${id}`).then((r) => r.handle),
+  createHandle: (body: Partial<Handle>) =>
+    request<{ handle: Handle }>("/api/handles", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }).then((r) => r.handle),
+  updateHandle: (id: string, body: Partial<Handle>) =>
+    request<{ handle: Handle }>(`/api/handles/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }).then((r) => r.handle),
+  deleteHandle: (id: string) => request<void>(`/api/handles/${id}`, { method: "DELETE" }),
 
   listAbrasives: () =>
     request<{ abrasives: Abrasive[] }>("/api/abrasives").then((r) => r.abrasives),
