@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans, Oswald } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import Link from "next/link";
+import { auth } from "@/lib/auth";
 import { LibraryMenu } from "@/components/library-menu";
 import { NavLink } from "@/components/nav-link";
 import { SignOutButton } from "@/components/sign-out-button";
@@ -35,11 +36,13 @@ export const metadata: Metadata = {
   description: "Track knives sharpened for friends and coworkers.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+  const signedIn = !!session;
   return (
     <html
       lang="en"
@@ -53,28 +56,30 @@ export default function RootLayout({
             <header>
               <div className="mx-auto flex h-12 max-w-7xl items-center gap-6 px-6 text-sm">
                 <Link
-                  href="/"
+                  href={signedIn ? "/" : "/login"}
                   className="flex items-center gap-1.5 font-heading text-lg font-semibold uppercase tracking-wider"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/logo.png" alt="" className="h-8 w-auto" />
                   Edgewise
                 </Link>
-                <nav className="flex items-center gap-5">
-                  <LibraryMenu />
-                  <NavLink href="/backlog">
-                    <Inbox className="h-4 w-4" />
-                    Backlog
-                  </NavLink>
-                  <NavLink href="/stats">
-                    <BarChart3 className="h-4 w-4" />
-                    Stats
-                  </NavLink>
-                  <NavLink href="/diary">
-                    <NotebookPen className="h-4 w-4" />
-                    Diary
-                  </NavLink>
-                </nav>
+                {signedIn && (
+                  <nav className="flex items-center gap-5">
+                    <LibraryMenu />
+                    <NavLink href="/backlog">
+                      <Inbox className="h-4 w-4" />
+                      Backlog
+                    </NavLink>
+                    <NavLink href="/stats">
+                      <BarChart3 className="h-4 w-4" />
+                      Stats
+                    </NavLink>
+                    <NavLink href="/diary">
+                      <NotebookPen className="h-4 w-4" />
+                      Diary
+                    </NavLink>
+                  </nav>
+                )}
                 <div className="ml-auto flex items-center gap-1">
                   <ThemeToggle />
                   <SignOutButton />

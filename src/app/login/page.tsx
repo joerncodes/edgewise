@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,6 @@ export default function LoginPage() {
 }
 
 function LoginForm() {
-  const router = useRouter();
   const params = useSearchParams();
   const callbackUrl = params.get("callbackUrl") || "/";
   const [password, setPassword] = useState("");
@@ -49,8 +48,7 @@ function LoginForm() {
               if (res?.error) {
                 setError("Wrong password.");
               } else if (res?.ok) {
-                router.push(callbackUrl);
-                router.refresh();
+                window.location.assign(callbackUrl);
               }
             }}
           >

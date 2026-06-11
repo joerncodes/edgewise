@@ -1,9 +1,32 @@
 ---
 filetype: todo
-status: open
+status: done
 ---
 
 # Sharpen login auth security
+
+**Done.** Applied all three suggested fixes:
+
+- Hid the nav on `/login` by gating the `<nav>` in `src/app/layout.tsx`
+  on a server-side `await auth()` session check. Logo on `/login` now
+  points back at `/login` instead of `/` to avoid the same prefetch
+  surface.
+- Moved `APP_PASSWORD` / `API_TOKEN` reads to module-level normalised
+  constants in `src/lib/auth.ts` — both get `.trim()`'d at startup,
+  and a missing/empty `APP_PASSWORD` logs a loud `[auth]` error at
+  boot instead of failing silently per request. Fixes the Portainer
+  YAML-quoting / trailing-newline class of bug.
+- Replaced `router.push(callbackUrl); router.refresh()` in
+  `src/app/login/page.tsx` with `window.location.assign(callbackUrl)`
+  so the post-login navigation is a full page load and the JWT
+  cookie is guaranteed to be in flight for the next request.
+
+`AUTH_URL` / cookie-domain mismatch is the one suggested investigation
+not addressed in code — that's a deployment config concern, see
+`docs/deployment.md`.
+
+---
+
 
 Two related issues observed on prod:
 
