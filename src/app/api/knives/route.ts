@@ -43,6 +43,7 @@ export async function POST(req: Request) {
       notes: input.notes ?? "",
       backlog,
       backlogPosition,
+      onLoan: input.onLoan ?? false,
       sessions: input.sessions ?? [],
       images: [],
       createdAt: now,

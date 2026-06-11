@@ -72,6 +72,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
       notes: merged.notes ?? "",
       backlog: merged.backlog ?? false,
       backlogPosition,
+      onLoan: merged.onLoan ?? false,
       sessions: merged.sessions ?? [],
       updatedAt: nowIso(),
     };

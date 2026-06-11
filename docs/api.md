@@ -143,6 +143,7 @@ KnifeInput = {
   type?: string
   notes?: string
   backlog?: boolean   // true while waiting on the bench; auto-cleared on next session
+  onLoan?: boolean    // true when physically here but not mine
   sessions?: Session[]
 }
 
@@ -197,6 +198,12 @@ curl -s -X PATCH $BASE/api/knives/wusthof-chef-8 \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"backlog":true}'
+
+# Mark a knife as on loan (here but not mine)
+curl -s -X PATCH $BASE/api/knives/wusthof-chef-8 \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"onLoan":true}'
 
 # List
 curl -s $BASE/api/knives -H "Authorization: Bearer $TOKEN" | jq

@@ -89,6 +89,7 @@ Fields:
 | `notes`        | string    | no       | the markdown body                  |
 | `backlog`      | boolean   | no       | true while waiting to be sharpened |
 | `backlogPosition` | number | no       | manual queue position (1, 2, 3, …) |
+| `onLoan`       | boolean   | no       | true when physically here but not mine |
 | `sessions`     | Session[] | no       | per-sharpening events, oldest→new  |
 | `createdAt`    | ISO       | yes      |                                    |
 | `updatedAt`    | ISO       | yes      |                                    |
@@ -98,6 +99,12 @@ when the knife is dropped off, and the `/backlog` page will surface it.
 Adding a session via `POST /api/knives/{id}/sessions` clears the flag
 automatically — sharpening obviously means it's no longer waiting. Absent
 or `false` means "not in the backlog".
+
+`onLoan` is orthogonal to `ownerId`: every knife already has an owner,
+this flag captures the physical state ("not mine, but in my house right
+now"). Absent or `false` means "not on loan". Set/cleared via
+`PATCH /api/knives/{id}`. An on-loan knife can also be in the backlog —
+the two flags don't interact.
 
 `backlogPosition` is the manual queue order on `/backlog`. Flagging a
 knife into the backlog auto-appends it (position = max + 1); the

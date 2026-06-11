@@ -58,6 +58,7 @@ export default function HomePage() {
 
   const [q, setQ] = useState("");
   const [filters, setFilters] = useState<FilterState>(() => emptyFilterState());
+  const [onLoanOnly, setOnLoanOnly] = useState(false);
   const [sort, setSort] = useState<SortKey>("recent");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [viewMode, setViewMode] = useViewMode();
@@ -79,7 +80,10 @@ export default function HomePage() {
   const filteredSorted = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const facetFiltered = applyFilters(knives, filters);
-    const filtered = facetFiltered.filter((k) => {
+    const loanFiltered = onLoanOnly
+      ? facetFiltered.filter((k) => k.onLoan)
+      : facetFiltered;
+    const filtered = loanFiltered.filter((k) => {
       if (!needle) return true;
       const ownerName = ownerById[k.ownerId]?.name ?? k.ownerId;
       return (
@@ -114,7 +118,7 @@ export default function HomePage() {
       case "added":
         return [...filtered].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     }
-  }, [knives, ownerById, filters, q, sort]);
+  }, [knives, ownerById, filters, onLoanOnly, q, sort]);
 
   const now = useMemo(() => new Date(), []);
 
@@ -127,7 +131,7 @@ export default function HomePage() {
   // or any facet selection. The hero is a landing-page focal point, not
   // a search result. It also disappears in table view, where a dense
   // sortable list is the whole point — see ADR-0012.
-  const isFilterActive = q.trim() !== "" || !filterStateIsEmpty(filters);
+  const isFilterActive = q.trim() !== "" || !filterStateIsEmpty(filters) || onLoanOnly;
   const heroKnife = useMemo(() => {
     if (isFilterActive || viewMode === "table") return undefined;
     const candidates = knives.filter((k) => k.images.length > 0 && lastSession(k));
@@ -140,7 +144,7 @@ export default function HomePage() {
     ? filteredSorted.filter((k) => k.id !== heroKnife.id)
     : filteredSorted;
 
-  const activeFilterCount = totalActiveFilters(filters);
+  const activeFilterCount = totalActiveFilters(filters) + (onLoanOnly ? 1 : 0);
 
   return (
     <div className="space-y-8">
@@ -184,6 +188,8 @@ export default function HomePage() {
               ownerById={ownerById}
               state={filters}
               onChange={setFilters}
+              onLoanOnly={onLoanOnly}
+              onOnLoanOnlyChange={setOnLoanOnly}
             />
           </div>
         </aside>
@@ -221,6 +227,8 @@ export default function HomePage() {
                     ownerById={ownerById}
                     state={filters}
                     onChange={setFilters}
+                    onLoanOnly={onLoanOnly}
+                    onOnLoanOnlyChange={setOnLoanOnly}
                   />
                 </div>
               </SheetContent>

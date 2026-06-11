@@ -68,6 +68,7 @@ export default function BacklogPage() {
 
   const [q, setQ] = useState("");
   const [filters, setFilters] = useState<FilterState>(() => emptyFilterState());
+  const [onLoanOnly, setOnLoanOnly] = useState(false);
   const [sort, setSort] = useState<SortKey>("manual");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [viewMode, setViewMode] = useViewMode();
@@ -91,7 +92,10 @@ export default function BacklogPage() {
   const filteredSorted = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const facetFiltered = applyFilters(backlog, filters);
-    const filtered = facetFiltered.filter((k) => {
+    const loanFiltered = onLoanOnly
+      ? facetFiltered.filter((k) => k.onLoan)
+      : facetFiltered;
+    const filtered = loanFiltered.filter((k) => {
       if (!needle) return true;
       const ownerName = ownerById[k.ownerId]?.name ?? k.ownerId;
       return (
@@ -116,13 +120,13 @@ export default function BacklogPage() {
       case "owner":
         return [...filtered].sort((a, b) => cmpOwner(a, b) || a.name.localeCompare(b.name));
     }
-  }, [backlog, ownerById, filters, q, sort]);
+  }, [backlog, ownerById, filters, onLoanOnly, q, sort]);
 
   const now = useMemo(() => new Date(), []);
 
   // Drag-and-drop is only meaningful when the visual order matches
   // storage — i.e. manual sort with no filter or search narrowing it.
-  const filtersActive = q.trim() !== "" || !filterStateIsEmpty(filters);
+  const filtersActive = q.trim() !== "" || !filterStateIsEmpty(filters) || onLoanOnly;
   const dndEnabled = sort === "manual" && !filtersActive;
   const dndPaused = sort === "manual" && filtersActive;
 
@@ -131,7 +135,7 @@ export default function BacklogPage() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const activeFilterCount = totalActiveFilters(filters);
+  const activeFilterCount = totalActiveFilters(filters) + (onLoanOnly ? 1 : 0);
 
   async function persistReorder(newOrder: string[]) {
     const previous = knives;
@@ -192,6 +196,8 @@ export default function BacklogPage() {
                 ownerById={ownerById}
                 state={filters}
                 onChange={setFilters}
+                onLoanOnly={onLoanOnly}
+                onOnLoanOnlyChange={setOnLoanOnly}
               />
             </div>
           </aside>
@@ -229,6 +235,8 @@ export default function BacklogPage() {
                       ownerById={ownerById}
                       state={filters}
                       onChange={setFilters}
+                      onLoanOnly={onLoanOnly}
+                      onOnLoanOnlyChange={setOnLoanOnly}
                     />
                   </div>
                 </SheetContent>

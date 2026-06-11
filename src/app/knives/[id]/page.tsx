@@ -1,6 +1,16 @@
 "use client";
 
-import { ArrowLeft, Atom, Factory, Gem, Inbox, PocketKnife, Tags, User } from "lucide-react";
+import {
+  ArrowLeft,
+  Atom,
+  Factory,
+  Gem,
+  Handshake,
+  Inbox,
+  PocketKnife,
+  Tags,
+  User,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -30,6 +40,7 @@ export default function KnifeDetailPage() {
   const [abrasives, setAbrasives] = useState<Abrasive[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
+  const [togglingLoan, setTogglingLoan] = useState(false);
 
   const abrasiveById = useMemo(
     () => Object.fromEntries(abrasives.map((a) => [a.id, a])),
@@ -50,6 +61,23 @@ export default function KnifeDetailPage() {
       toast.error(err instanceof Error ? err.message : "Failed to update");
     } finally {
       setToggling(false);
+    }
+  }
+
+  async function toggleOnLoan() {
+    if (!knife || togglingLoan) return;
+    const next = !knife.onLoan;
+    setTogglingLoan(true);
+    try {
+      const updated = await api.updateKnife(knife.id, { onLoan: next });
+      setKnife(updated);
+      toast(next ? "Marked as on loan" : "Marked as returned", {
+        icon: <Handshake className="h-4 w-4" />,
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update");
+    } finally {
+      setTogglingLoan(false);
     }
   }
 
@@ -120,6 +148,16 @@ export default function KnifeDetailPage() {
               <Inbox className="h-3 w-3" />
             </Link>
           )}
+          {knife.onLoan && (
+            <span
+              aria-label="On loan"
+              title="On loan — here but not mine"
+              className="inline-flex items-center gap-1 rounded-md border border-brass/40 bg-brass/10 px-2 py-0.5 font-mono text-[11px] uppercase tracking-wider text-brass"
+            >
+              <Handshake className="h-3 w-3" />
+              On loan
+            </span>
+          )}
         </h1>
         <p className="text-sm text-muted-foreground">
           {owner ? (
@@ -137,7 +175,7 @@ export default function KnifeDetailPage() {
             </span>
           )}
         </p>
-        <div>
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
             size="xs"
@@ -146,6 +184,15 @@ export default function KnifeDetailPage() {
           >
             <Inbox />
             {knife.backlog ? "Remove from backlog" : "Add to backlog"}
+          </Button>
+          <Button
+            variant="outline"
+            size="xs"
+            onClick={toggleOnLoan}
+            disabled={togglingLoan}
+          >
+            <Handshake />
+            {knife.onLoan ? "Mark as returned" : "Mark as on loan"}
           </Button>
         </div>
       </header>

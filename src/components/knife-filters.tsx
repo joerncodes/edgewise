@@ -1,6 +1,6 @@
 "use client";
 
-import { Atom, Factory, Tags, User } from "lucide-react";
+import { Atom, Factory, Handshake, Tags, User } from "lucide-react";
 import { useMemo } from "react";
 import {
   Accordion,
@@ -41,12 +41,18 @@ export function KnifeFilters({
   ownerById,
   state,
   onChange,
+  onLoanOnly = false,
+  onOnLoanOnlyChange,
 }: {
   knives: Knife[];
   ownerById: Record<string, Owner>;
   state: FilterState;
   onChange: (s: FilterState) => void;
+  onLoanOnly?: boolean;
+  onOnLoanOnlyChange?: (v: boolean) => void;
 }) {
+  const onLoanCount = knives.reduce((n, k) => (k.onLoan ? n + 1 : n), 0);
+  const showOnLoanToggle = Boolean(onOnLoanOnlyChange) && onLoanCount > 0;
   // Per-facet options. Each facet's counts are narrowed by the *other*
   // active facets — that's the cross-narrowing behaviour. Values that
   // would drop to zero stay in the list but render disabled.
@@ -80,7 +86,7 @@ export function KnifeFilters({
     return value;
   }
 
-  if (visibleFacets.length === 0) {
+  if (visibleFacets.length === 0 && !showOnLoanToggle) {
     return (
       <p className="text-xs text-muted-foreground">
         No filterable values yet.
@@ -88,22 +94,44 @@ export function KnifeFilters({
     );
   }
 
+  const anyActive = !filterStateIsEmpty(state) || onLoanOnly;
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="font-heading text-xs uppercase tracking-wider text-muted-foreground">
           Filters
         </h2>
-        {!filterStateIsEmpty(state) && (
+        {anyActive && (
           <button
             type="button"
-            onClick={() => onChange(emptyFilterState())}
+            onClick={() => {
+              onChange(emptyFilterState());
+              onOnLoanOnlyChange?.(false);
+            }}
             className="cursor-pointer text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
           >
             Clear all
           </button>
         )}
       </div>
+      {showOnLoanToggle && (
+        <label
+          htmlFor="f-on-loan"
+          className="flex cursor-pointer items-center gap-2 rounded-md border border-border/70 px-2 py-1.5 text-sm hover:bg-muted/40"
+        >
+          <Checkbox
+            id="f-on-loan"
+            checked={onLoanOnly}
+            onCheckedChange={(v) => onOnLoanOnlyChange?.(Boolean(v))}
+          />
+          <Handshake className="h-3.5 w-3.5" />
+          <span className="flex-1 leading-tight">On loan only</span>
+          <span className="font-mono text-xs text-muted-foreground">
+            {onLoanCount}
+          </span>
+        </label>
+      )}
       <Accordion multiple defaultValue={defaultOpen} className="w-full">
         {visibleFacets.map(({ key, title, Icon }) => {
           const selected = state[key];

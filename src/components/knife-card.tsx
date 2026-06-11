@@ -1,6 +1,6 @@
 "use client";
 
-import { Atom, ChevronDown, ChevronRight, Factory, Tags, User } from "lucide-react";
+import { Atom, ChevronDown, ChevronRight, Factory, Handshake, Tags, User } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Photo } from "@/components/photo";
@@ -108,6 +108,12 @@ export function KnifeCard({
               {knife.name}
             </Link>
           </h2>
+          {knife.onLoan && (
+            <span className="relative z-10 inline-flex shrink-0 items-center gap-1 rounded-md border border-brass/40 bg-brass/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-brass">
+              <Handshake className="h-3 w-3" />
+              On loan
+            </span>
+          )}
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground" />
         </div>
 
