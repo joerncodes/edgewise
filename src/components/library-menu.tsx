@@ -1,6 +1,15 @@
 "use client";
 
-import { Atom, ChevronDown, Factory, Gem, Library, Tags, User } from "lucide-react";
+import {
+  Atom,
+  ChevronDown,
+  Factory,
+  Gem,
+  Grip,
+  Library,
+  Tags,
+  User,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -15,6 +24,7 @@ const ITEMS = [
   { href: "/manufacturers", label: "Manufacturers", Icon: Factory },
   { href: "/types", label: "Types", Icon: Tags },
   { href: "/steels", label: "Steels", Icon: Atom },
+  { href: "/handles", label: "Handles", Icon: Grip },
   { href: "/abrasives", label: "Abrasives", Icon: Gem },
 ] as const;
 

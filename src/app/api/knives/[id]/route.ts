@@ -68,6 +68,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
       ownerId: merged.ownerId,
       manufacturer: merged.manufacturer ?? "",
       steel: merged.steel ?? "",
+      handle: merged.handle ?? "",
       type: merged.type ?? "",
       notes: merged.notes ?? "",
       backlog: merged.backlog ?? false,

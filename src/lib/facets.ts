@@ -8,15 +8,21 @@ export interface FacetValue {
 export interface Facets {
   manufacturers: FacetValue[];
   steels: FacetValue[];
+  handles: FacetValue[];
   types: FacetValue[];
   owners: FacetValue[];
 }
 
 // One categorical attribute on `Knife` that the UI lets users filter by.
-// Ordered for default rendering — owner first, handle last (handle is
-// reserved for [[handle-material]] but already wired through the types
-// so the field can light up once added).
-export const FACET_KEYS = ["owner", "manufacturer", "type", "steel"] as const;
+// Ordered for default rendering — owner first, narrowing attributes
+// after.
+export const FACET_KEYS = [
+  "owner",
+  "manufacturer",
+  "type",
+  "steel",
+  "handle",
+] as const;
 export type FacetKey = (typeof FACET_KEYS)[number];
 
 export type FilterState = Record<FacetKey, Set<string>>;
@@ -27,6 +33,7 @@ export function emptyFilterState(): FilterState {
     manufacturer: new Set(),
     type: new Set(),
     steel: new Set(),
+    handle: new Set(),
   };
 }
 
@@ -63,6 +70,8 @@ function fieldFor(key: FacetKey): (k: Knife) => string | undefined {
       return (k) => k.type;
     case "steel":
       return (k) => k.steel;
+    case "handle":
+      return (k) => k.handle;
   }
 }
 
@@ -92,6 +101,7 @@ export function computeFacets(knives: Knife[]): Facets {
   return {
     manufacturers: tally(knives, (k) => k.manufacturer),
     steels: tally(knives, (k) => k.steel),
+    handles: tally(knives, (k) => k.handle),
     types: tally(knives, (k) => k.type),
     owners: tally(knives, (k) => k.ownerId),
   };

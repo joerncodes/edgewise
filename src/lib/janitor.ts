@@ -18,6 +18,7 @@ export interface Janitor {
   noSteel: KnifeRef[];
   noType: KnifeRef[];
   noManufacturer: KnifeRef[];
+  noHandle: KnifeRef[];
   noNotes: KnifeRef[];
   stale: StaleKnifeRef[];
   staleAfterDays: number;
@@ -54,6 +55,7 @@ export function computeJanitor(
   const noSteel: KnifeRef[] = [];
   const noType: KnifeRef[] = [];
   const noManufacturer: KnifeRef[] = [];
+  const noHandle: KnifeRef[] = [];
   const noNotes: KnifeRef[] = [];
   const stale: StaleKnifeRef[] = [];
 
@@ -64,6 +66,7 @@ export function computeJanitor(
     if (!(k.steel ?? "").trim()) noSteel.push(r);
     if (!(k.type ?? "").trim()) noType.push(r);
     if (!(k.manufacturer ?? "").trim()) noManufacturer.push(r);
+    if (!(k.handle ?? "").trim()) noHandle.push(r);
     if (!(k.notes ?? "").trim()) noNotes.push(r);
 
     const last = lastSessionDate(k);
@@ -81,6 +84,7 @@ export function computeJanitor(
   noSteel.sort(byName);
   noType.sort(byName);
   noManufacturer.sort(byName);
+  noHandle.sort(byName);
   noNotes.sort(byName);
   stale.sort((a, b) => b.daysSince - a.daysSince);
 
@@ -90,6 +94,7 @@ export function computeJanitor(
     noSteel,
     noType,
     noManufacturer,
+    noHandle,
     noNotes,
     stale,
     staleAfterDays,

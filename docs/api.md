@@ -140,6 +140,7 @@ KnifeInput = {
   ownerId: string
   manufacturer?: string
   steel?: string
+  handle?: string
   type?: string
   notes?: string
   backlog?: boolean   // true while waiting on the bench; auto-cleared on next session

@@ -1,6 +1,6 @@
 "use client";
 
-import { Atom, Factory, Handshake, Tags, User } from "lucide-react";
+import { Atom, Factory, Grip, Handshake, Tags, User } from "lucide-react";
 import { useMemo } from "react";
 import {
   Accordion,
@@ -34,6 +34,7 @@ const FACETS: FacetMeta[] = [
   { key: "manufacturer", title: "Manufacturer", Icon: Factory },
   { key: "type", title: "Type", Icon: Tags },
   { key: "steel", title: "Steel", Icon: Atom },
+  { key: "handle", title: "Handle", Icon: Grip },
 ];
 
 export function KnifeFilters({
@@ -62,6 +63,7 @@ export function KnifeFilters({
       manufacturer: [],
       type: [],
       steel: [],
+      handle: [],
     };
     for (const key of FACET_KEYS) out[key] = facetOptions(knives, state, key);
     return out;

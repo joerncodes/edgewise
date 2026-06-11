@@ -5,6 +5,7 @@ import {
   Atom,
   Factory,
   Gem,
+  Grip,
   Handshake,
   Inbox,
   PocketKnife,
@@ -240,6 +241,17 @@ export default function KnifeDetailPage() {
               >
                 <Atom className="h-3.5 w-3.5" />
                 {knife.steel}
+              </Link>
+            ) : null}
+          </PropertyRow>
+          <PropertyRow label="Handle">
+            {knife.handle ? (
+              <Link
+                href={`/handles/${slugify(knife.handle)}`}
+                className="inline-flex items-center gap-1.5 hover:underline"
+              >
+                <Grip className="h-3.5 w-3.5" />
+                {knife.handle}
               </Link>
             ) : null}
           </PropertyRow>

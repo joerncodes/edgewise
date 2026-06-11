@@ -57,6 +57,11 @@ export default function JanitorPage() {
             title="No manufacturer recorded"
             rows={janitor.noManufacturer}
           />
+          <Section
+            value="no-handle"
+            title="No handle material recorded"
+            rows={janitor.noHandle}
+          />
           <Section value="no-notes" title="No notes" rows={janitor.noNotes} />
           <StaleSection
             value="stale"

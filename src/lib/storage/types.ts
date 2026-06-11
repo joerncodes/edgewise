@@ -49,6 +49,7 @@ export const KnifeSchema = z.object({
   ownerId: z.string().min(1),
   manufacturer: z.string().optional().default(""),
   steel: z.string().optional().default(""),
+  handle: z.string().optional().default(""),
   type: z.string().optional().default(""),
   notes: z.string().optional().default(""),
   backlog: z.boolean().optional().default(false),

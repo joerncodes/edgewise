@@ -180,6 +180,7 @@ type Janitor = {
   noSteel: KnifeRef[];
   noType: KnifeRef[];
   noManufacturer: KnifeRef[];
+  noHandle: KnifeRef[];
   noNotes: KnifeRef[];
   stale: (KnifeRef & { lastDate: string; daysSince: number })[];
   staleAfterDays: number;
@@ -209,6 +210,7 @@ IDs (foreign keys); hit \`/api/owners\` to resolve display names.
 type Facets = {
   manufacturers: { value: string; count: number }[];
   steels:        { value: string; count: number }[];
+  handles:       { value: string; count: number }[];
   types:         { value: string; count: number }[];
   owners:        { value: string; count: number }[];
 };

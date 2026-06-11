@@ -1,6 +1,15 @@
 "use client";
 
-import { Atom, ChevronDown, ChevronRight, Factory, Handshake, Tags, User } from "lucide-react";
+import {
+  Atom,
+  ChevronDown,
+  ChevronRight,
+  Factory,
+  Grip,
+  Handshake,
+  Tags,
+  User,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Photo } from "@/components/photo";
@@ -143,6 +152,15 @@ export function KnifeCard({
             >
               <Atom className="h-3 w-3" />
               {knife.steel}
+            </Link>
+          )}
+          {knife.handle && (
+            <Link
+              href={`/handles/${slugify(knife.handle)}`}
+              className="inline-flex items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-muted-foreground hover:text-foreground"
+            >
+              <Grip className="h-3 w-3" />
+              {knife.handle}
             </Link>
           )}
         </div>

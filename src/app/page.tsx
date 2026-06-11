@@ -90,7 +90,8 @@ export default function HomePage() {
         k.name.toLowerCase().includes(needle) ||
         ownerName.toLowerCase().includes(needle) ||
         (k.type ?? "").toLowerCase().includes(needle) ||
-        (k.steel ?? "").toLowerCase().includes(needle)
+        (k.steel ?? "").toLowerCase().includes(needle) ||
+        (k.handle ?? "").toLowerCase().includes(needle)
       );
     });
 
@@ -198,7 +199,7 @@ export default function HomePage() {
           <div className="flex flex-wrap items-center gap-3">
             <Input
               type="search"
-              placeholder="Search name, owner, type, steel…"
+              placeholder="Search name, owner, type, steel, handle…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               className="h-9 max-w-sm flex-1 min-w-[12rem]"

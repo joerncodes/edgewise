@@ -39,6 +39,7 @@ export async function POST(req: Request) {
       ownerId: input.ownerId,
       manufacturer: input.manufacturer ?? "",
       steel: input.steel ?? "",
+      handle: input.handle ?? "",
       type: input.type ?? "",
       notes: input.notes ?? "",
       backlog,

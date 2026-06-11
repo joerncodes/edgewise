@@ -61,6 +61,7 @@ name: Wüsthof Classic 8" Chef
 ownerId: jane-doe
 manufacturer: Wüsthof
 steel: X50CrMoV15
+handle: black POM
 type: chef
 sessions:
   - date: 2026-01-15
@@ -85,6 +86,7 @@ Fields:
 | `ownerId`      | string    | yes      | must match an existing owner       |
 | `manufacturer` | string    | no       |                                    |
 | `steel`        | string    | no       |                                    |
+| `handle`       | string    | no       | handle material — G10, micarta, wood, stag, horn… |
 | `type`         | string    | no       | chef, paring, santoku, pocket…     |
 | `notes`        | string    | no       | the markdown body                  |
 | `backlog`      | boolean   | no       | true while waiting to be sharpened |
