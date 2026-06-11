@@ -17,21 +17,25 @@ export function Stars({
   const full = Math.floor(half);
   const hasHalf = half - full === 0.5;
   const dim = size === "md" ? "h-4 w-4" : "h-3 w-3";
+  const label = value.toFixed(1);
   return (
     <span
-      className={cn("inline-flex items-center gap-px text-amber-500", className)}
-      aria-label={`${half} out of 5 stars`}
-      title={`${half} / 5`}
+      className={cn("inline-flex items-center gap-1", className)}
+      aria-label={`${label} out of 5 stars`}
+      title={`${label} / 5`}
     >
-      {Array.from({ length: 5 }).map((_, i) => {
-        if (i < full) {
-          return <Star key={i} className={cn(dim, "fill-current")} />;
-        }
-        if (i === full && hasHalf) {
-          return <StarHalf key={i} className={cn(dim, "fill-current")} />;
-        }
-        return <Star key={i} className={cn(dim, "text-muted-foreground/30")} />;
-      })}
+      <span className="inline-flex items-center gap-px text-amber-500">
+        {Array.from({ length: 5 }).map((_, i) => {
+          if (i < full) {
+            return <Star key={i} className={cn(dim, "fill-current")} />;
+          }
+          if (i === full && hasHalf) {
+            return <StarHalf key={i} className={cn(dim, "fill-current")} />;
+          }
+          return <Star key={i} className={cn(dim, "text-muted-foreground/30")} />;
+        })}
+      </span>
+      <span className="text-xs tabular-nums text-muted-foreground">{label}</span>
     </span>
   );
 }
