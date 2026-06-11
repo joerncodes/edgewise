@@ -2,10 +2,11 @@
 
 import { NotebookPen, User } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { Markdown } from "@/components/markdown";
 import { Stars } from "@/components/stars";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/api-client";
 import type { Diary, DiaryEntry } from "@/lib/diary";
 
@@ -31,6 +32,7 @@ function formatDate(iso: string): string {
 export default function DiaryPage() {
   const [diary, setDiary] = useState<Diary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [year, setYear] = useState<string | null>(null);
 
   useEffect(() => {
     api
@@ -38,6 +40,21 @@ export default function DiaryPage() {
       .then(setDiary)
       .finally(() => setLoading(false));
   }, []);
+
+  const years = useMemo(() => {
+    if (!diary) return [];
+    const set = new Set<string>();
+    for (const m of diary.months) set.add(m.month.slice(0, 4));
+    return Array.from(set).sort((a, b) => b.localeCompare(a));
+  }, [diary]);
+
+  const activeYear = year && years.includes(year) ? year : years[0] ?? null;
+
+  const visibleMonths = useMemo(() => {
+    if (!diary) return [];
+    if (!activeYear) return diary.months;
+    return diary.months.filter((m) => m.month.startsWith(`${activeYear}-`));
+  }, [diary, activeYear]);
 
   return (
     <div className="space-y-8">
@@ -50,8 +67,17 @@ export default function DiaryPage() {
           <p className="text-sm text-muted-foreground">
             <span className="font-mono">{diary.totalSessions}</span>{" "}
             {diary.totalSessions === 1 ? "session" : "sessions"} across{" "}
-            <span className="font-mono">{diary.months.length}</span>{" "}
-            {diary.months.length === 1 ? "month" : "months"}.
+            <span className="font-mono">
+              {years.length >= 2 ? years.length : diary.months.length}
+            </span>{" "}
+            {years.length >= 2
+              ? years.length === 1
+                ? "year"
+                : "years"
+              : diary.months.length === 1
+                ? "month"
+                : "months"}
+            .
           </p>
         )}
       </header>
@@ -64,21 +90,38 @@ export default function DiaryPage() {
           hint="Add a sharpening session via the API and it will show up here."
         />
       ) : (
-        <div className="space-y-10">
-          {diary.months.map((m) => (
-            <section key={m.month} className="space-y-3">
-              <h2 className="font-heading text-sm uppercase tracking-wider text-foreground/80">
-                {formatMonth(m.month)}
-              </h2>
-              <ol className="-mx-2 divide-y divide-border/60">
-                {m.entries.map((e, i) => (
-                  <li key={`${e.knifeId}-${e.date}-${i}`}>
-                    <Row entry={e} />
-                  </li>
+        <div className="space-y-6">
+          {years.length > 1 && activeYear && (
+            <Tabs value={activeYear} onValueChange={setYear} className="my-6">
+              <TabsList className="h-auto gap-1 p-1">
+                {years.map((y) => (
+                  <TabsTrigger
+                    key={y}
+                    value={y}
+                    className="px-5 py-2 font-mono text-base tracking-wider data-active:bg-brass data-active:font-semibold data-active:text-background data-active:shadow-md dark:data-active:bg-brass dark:data-active:text-background"
+                  >
+                    {y}
+                  </TabsTrigger>
                 ))}
-              </ol>
-            </section>
-          ))}
+              </TabsList>
+            </Tabs>
+          )}
+          <div className="space-y-10">
+            {visibleMonths.map((m) => (
+              <section key={m.month} className="space-y-3">
+                <h2 className="font-heading text-sm uppercase tracking-wider text-foreground/80">
+                  {formatMonth(m.month)}
+                </h2>
+                <ol className="-mx-2 divide-y divide-border/60">
+                  {m.entries.map((e, i) => (
+                    <li key={`${e.knifeId}-${e.date}-${i}`}>
+                      <Row entry={e} />
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            ))}
+          </div>
         </div>
       )}
     </div>
