@@ -1,6 +1,6 @@
 import { ZodError } from "zod";
 import { getStorage, SharpeningSessionSchema } from "@/lib/storage";
-import { badRequest, fromZod, json, notFound, nowIso, serverError } from "@/lib/http";
+import { badRequest, conflict, fromZod, json, notFound, nowIso, serverError } from "@/lib/http";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -14,6 +14,12 @@ export async function POST(req: Request, { params }: Ctx) {
     const storage = getStorage();
     const knife = await storage.getKnife(id);
     if (!knife) return notFound("knife not found");
+
+    // Date is the primary key for PATCH/DELETE on individual sessions
+    // (see /api/knives/[id]/sessions/[date]). Keep it unique per knife.
+    if (knife.sessions.some((s) => s.date === session.date)) {
+      return conflict(`session already exists on ${session.date}`);
+    }
 
     if (session.abrasives?.length) {
       const missing: string[] = [];

@@ -45,6 +45,8 @@ const ENDPOINTS = `\
 | PATCH  | \`/api/knives/{id}\`                    | partial \`KnifeInput\` | \`{ knife }\`           |
 | DELETE | \`/api/knives/{id}\`                    | —                  | 204                      |
 | POST   | \`/api/knives/{id}/sessions\`           | \`SharpeningSession\` | \`{ knife }\` (201)       |
+| PATCH  | \`/api/knives/{id}/sessions/{date}\`    | partial \`SharpeningSession\` (no \`date\`) | \`{ knife }\` |
+| DELETE | \`/api/knives/{id}/sessions/{date}\`    | —                  | \`{ knife }\`              |
 | POST   | \`/api/knives/{id}/images\`             | multipart (\`file\`, optional \`caption\`) | \`{ knife }\` (201) |
 | GET    | \`/api/knives/{id}/images/{filename}\`  | —                  | image bytes              |
 | DELETE | \`/api/knives/{id}/images/{filename}\`  | —                  | \`{ knife }\`              |
@@ -95,6 +97,16 @@ curl -s -X POST $BASE/api/knives/wusthof-chef-8/sessions \\
   -H "Authorization: Bearer $TOKEN" \\
   -H 'Content-Type: application/json' \\
   -d '{"date":"2026-06-09","angle":18,"notes":"Touch-up on 4000","rating":4.5}'
+
+# Edit that session in place (omitted fields stay, null clears optionals)
+curl -s -X PATCH $BASE/api/knives/wusthof-chef-8/sessions/2026-06-09 \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H 'Content-Type: application/json' \\
+  -d '{"notes":"Touch-up on 4000, finished on strop"}'
+
+# Delete a session (date is the primary key; re-POST to change it)
+curl -s -X DELETE $BASE/api/knives/wusthof-chef-8/sessions/2026-06-09 \\
+  -H "Authorization: Bearer $TOKEN"
 
 # Upload an image (multipart)
 curl -s -X POST $BASE/api/knives/wusthof-chef-8/images \\

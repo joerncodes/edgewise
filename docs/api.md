@@ -40,9 +40,20 @@ with status `401`.
 | PATCH  | `/api/knives/{id}`            | partial `KnifeInput`| `{ knife }`              |
 | DELETE | `/api/knives/{id}`            | —                   | 204                      |
 | POST   | `/api/knives/{id}/sessions`   | `Session`           | `{ knife }` (201)        |
+| PATCH  | `/api/knives/{id}/sessions/{date}` | partial `Session` | `{ knife }`         |
+| DELETE | `/api/knives/{id}/sessions/{date}` | —              | `{ knife }`              |
 | POST   | `/api/knives/{id}/images`     | multipart           | `{ knife }` (201)        |
 | GET    | `/api/knives/{id}/images/{filename}` | —            | image bytes              |
 | DELETE | `/api/knives/{id}/images/{filename}` | —            | `{ knife }`              |
+
+`PATCH /api/knives/{id}/sessions/{date}` updates `angle`, `notes`,
+`rating`, and/or `abrasives` on the session whose `date` matches the URL
+segment. Date is the primary key per knife — to change it, `DELETE` and
+re-`POST`. Omitted fields stay; `null` clears an optional field
+(`notes`, `rating`, `abrasives`). Returns `404` if the knife or session
+doesn't exist; `400` if validation fails or an unknown `abrasives[]` ID
+is referenced. `POST /api/knives/{id}/sessions` returns `409` if a
+session already exists on that date.
 
 `PATCH /api/knives/{id}` accepts `backlogPosition: number | null` to set
 or clear the manual queue position. `null` clears it explicitly. Flagging
@@ -193,6 +204,16 @@ curl -s -X POST $BASE/api/knives/wusthof-chef-8/sessions \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"date":"2026-06-09","angle":18,"notes":"Touch-up on 4000"}'
+
+# Fix a typo on that session
+curl -s -X PATCH $BASE/api/knives/wusthof-chef-8/sessions/2026-06-09 \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"notes":"Touch-up on 4000, finished on strop"}'
+
+# Delete a session
+curl -s -X DELETE $BASE/api/knives/wusthof-chef-8/sessions/2026-06-09 \
+  -H "Authorization: Bearer $TOKEN"
 
 # Flag a knife as waiting on the bench (appears on /backlog)
 curl -s -X PATCH $BASE/api/knives/wusthof-chef-8 \

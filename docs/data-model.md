@@ -120,11 +120,17 @@ manual view, sorted by `createdAt` — no special-case migration needed.
 
 | field    | type     | required | notes                                |
 |----------|----------|----------|--------------------------------------|
-| `date`   | string   | yes      | `YYYY-MM-DD`                         |
+| `date`   | string   | yes      | `YYYY-MM-DD`, unique per knife       |
 | `angle`  | number   | yes      | degrees per side, 1–45               |
 | `notes`  | string   | no       | what was done that day               |
 | `rating` | number   | no       | subjective 1–5, free precision       |
 | `abrasives` | string[] | no    | `Abrasive.id`s in coarse → fine order |
+
+`date` is the primary key for per-session mutation
+(`PATCH`/`DELETE /api/knives/{id}/sessions/{date}`). `POST` rejects a
+second session on a date that already exists on the same knife with
+`409`. Two sharpenings the same day is rare in practice; if it happens,
+add a minute of difference into `notes` rather than colliding the keys.
 
 `rating` is the owner's gut feel for how the session went. Free-precision
 float in `[1, 5]` (e.g. `2.6`, `4.8`). The UI rounds to the nearest half

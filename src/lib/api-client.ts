@@ -38,6 +38,20 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }).then((r) => r.knife),
+  editSession: (
+    id: string,
+    date: string,
+    body: Partial<Omit<SharpeningSession, "date">>,
+  ) =>
+    request<{ knife: Knife }>(
+      `/api/knives/${id}/sessions/${encodeURIComponent(date)}`,
+      { method: "PATCH", body: JSON.stringify(body) },
+    ).then((r) => r.knife),
+  deleteSession: (id: string, date: string) =>
+    request<{ knife: Knife }>(
+      `/api/knives/${id}/sessions/${encodeURIComponent(date)}`,
+      { method: "DELETE" },
+    ).then((r) => r.knife),
   imageUrl: (knifeId: string, filename: string, size?: "thumb") =>
     `/api/knives/${encodeURIComponent(knifeId)}/images/${encodeURIComponent(filename)}${
       size === "thumb" ? "?size=thumb" : ""
