@@ -12,10 +12,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { BacklogWaitedBadge } from "@/components/backlog-waited-badge";
 import { Photo } from "@/components/photo";
 import { Stars } from "@/components/stars";
 import { api } from "@/lib/api-client";
-import { backlogAgeBucket, backlogAgeDays, inBacklog } from "@/lib/backlog";
+import { backlogAgeBucket, inBacklog } from "@/lib/backlog";
 import { slugify } from "@/lib/storage/ids";
 import { cn } from "@/lib/utils";
 import type { Knife, Owner, SharpeningSession } from "@/lib/storage/types";
@@ -71,7 +72,6 @@ export function KnifeCard({
   const cover = knife.images[0];
   const showAge = showBacklogAge && inBacklog(knife);
   const ageBucket = showAge ? backlogAgeBucket(knife, now) : null;
-  const ageDays = showAge ? backlogAgeDays(knife, now) : 0;
 
   return (
     <article
@@ -133,19 +133,12 @@ export function KnifeCard({
               On loan
             </span>
           )}
-          {showAge && ageBucket !== "fresh" && (
-            <span
-              className={cn(
-                "relative z-10 inline-flex shrink-0 items-center rounded-md border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider",
-                ageBucket === "warm" &&
-                  "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
-                ageBucket === "stale" &&
-                  "border-red-500/50 bg-red-500/10 text-red-700 dark:text-red-300",
-              )}
-              title={`Added ${ageDays} day${ageDays === 1 ? "" : "s"} ago`}
-            >
-              Waited {ageDays}d
-            </span>
+          {showAge && (
+            <BacklogWaitedBadge
+              knife={knife}
+              now={now}
+              className="relative z-10 shrink-0"
+            />
           )}
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground" />
         </div>

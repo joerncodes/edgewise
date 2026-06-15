@@ -20,9 +20,10 @@ import { CSS } from "@dnd-kit/utilities";
 import { ChevronRight, GripVertical } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { BacklogWaitedBadge } from "@/components/backlog-waited-badge";
 import { ago, formatDate, KnifeCard, lastSession } from "@/components/knife-card";
 import { Stars } from "@/components/stars";
-import { backlogAgeBucket, backlogAgeDays, inBacklog } from "@/lib/backlog";
+import { inBacklog } from "@/lib/backlog";
 import {
   Table,
   TableBody,
@@ -444,24 +445,9 @@ function KnifeRow({
             );
           case "added":
             if (showBacklogAge && inBacklog(knife)) {
-              const bucket = backlogAgeBucket(knife, now);
-              const days = backlogAgeDays(knife, now);
               return (
                 <TableCell key={c} className="text-xs">
-                  <span
-                    className={cn(
-                      "inline-flex items-center rounded-md border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider",
-                      bucket === "fresh" &&
-                        "border-border/60 bg-muted/40 text-muted-foreground",
-                      bucket === "warm" &&
-                        "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
-                      bucket === "stale" &&
-                        "border-red-500/50 bg-red-500/10 text-red-700 dark:text-red-300",
-                    )}
-                    title={`Added ${days} day${days === 1 ? "" : "s"} ago`}
-                  >
-                    Waited {days}d
-                  </span>
+                  <BacklogWaitedBadge knife={knife} now={now} showFresh />
                 </TableCell>
               );
             }
