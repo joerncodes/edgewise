@@ -15,6 +15,7 @@ import { useState } from "react";
 import { Photo } from "@/components/photo";
 import { Stars } from "@/components/stars";
 import { api } from "@/lib/api-client";
+import { backlogAgeBucket, backlogAgeDays, inBacklog } from "@/lib/backlog";
 import { slugify } from "@/lib/storage/ids";
 import { cn } from "@/lib/utils";
 import type { Knife, Owner, SharpeningSession } from "@/lib/storage/types";
@@ -51,6 +52,7 @@ export function KnifeCard({
   owner,
   now,
   featured = false,
+  showBacklogAge = false,
 }: {
   knife: Knife;
   owner?: Owner;
@@ -58,12 +60,18 @@ export function KnifeCard({
   // When true, lay out side-by-side on desktop with a taller image —
   // same content, just more room. Mobile is unchanged.
   featured?: boolean;
+  // Render the backlog-age cue (left-border accent + pill). Only meaningful
+  // on the backlog page; cards on `/` should stay neutral.
+  showBacklogAge?: boolean;
 }) {
   const [showHistory, setShowHistory] = useState(false);
   const last = lastSession(knife);
   const ownerName = owner?.name ?? knife.ownerId;
   const sortedSessions = [...knife.sessions].sort((a, b) => b.date.localeCompare(a.date));
   const cover = knife.images[0];
+  const showAge = showBacklogAge && inBacklog(knife);
+  const ageBucket = showAge ? backlogAgeBucket(knife, now) : null;
+  const ageDays = showAge ? backlogAgeDays(knife, now) : 0;
 
   return (
     <article
@@ -72,6 +80,8 @@ export function KnifeCard({
         featured
           ? "border-brass/30 bg-brass/5 hover:border-brass/50 dark:border-brass/25 dark:bg-brass/[0.06] dark:hover:border-brass/40 md:flex-row"
           : "border-border/70 bg-card/30 hover:border-border dark:border-border dark:bg-accent",
+        ageBucket === "warm" && "border-l-2 border-l-amber-500/60",
+        ageBucket === "stale" && "border-l-2 border-l-red-500/70",
       )}
     >
       {cover && (
@@ -121,6 +131,20 @@ export function KnifeCard({
             <span className="relative z-10 inline-flex shrink-0 items-center gap-1 rounded-md border border-brass/40 bg-brass/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-brass">
               <Handshake className="h-3 w-3" />
               On loan
+            </span>
+          )}
+          {showAge && ageBucket !== "fresh" && (
+            <span
+              className={cn(
+                "relative z-10 inline-flex shrink-0 items-center rounded-md border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider",
+                ageBucket === "warm" &&
+                  "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+                ageBucket === "stale" &&
+                  "border-red-500/50 bg-red-500/10 text-red-700 dark:text-red-300",
+              )}
+              title={`Added ${ageDays} day${ageDays === 1 ? "" : "s"} ago`}
+            >
+              Waited {ageDays}d
             </span>
           )}
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground" />

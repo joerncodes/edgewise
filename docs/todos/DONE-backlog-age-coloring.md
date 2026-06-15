@@ -1,6 +1,6 @@
 ---
 filetype: todo
-status: open
+status: done
 ---
 
 # Backlog age coloring

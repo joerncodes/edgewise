@@ -22,6 +22,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ago, formatDate, KnifeCard, lastSession } from "@/components/knife-card";
 import { Stars } from "@/components/stars";
+import { backlogAgeBucket, backlogAgeDays, inBacklog } from "@/lib/backlog";
 import {
   Table,
   TableBody,
@@ -102,6 +103,7 @@ export function KnivesView({
   onReorder?: (ids: string[]) => void;
 }) {
   const ownerById = Object.fromEntries(owners.map((o) => [o.id, o]));
+  const showBacklogAge = variant === "backlog";
 
   if (mode === "cards") {
     return (
@@ -111,7 +113,12 @@ export function KnivesView({
           if (renderCardItem) return renderCardItem(k, owner);
           return (
             <li key={k.id}>
-              <KnifeCard knife={k} owner={owner} now={now} />
+              <KnifeCard
+                knife={k}
+                owner={owner}
+                now={now}
+                showBacklogAge={showBacklogAge}
+              />
             </li>
           );
         })}
@@ -130,6 +137,7 @@ export function KnivesView({
       now={now}
       columns={columns}
       onReorder={onReorder}
+      showBacklogAge={showBacklogAge}
     />
   );
 }
@@ -154,12 +162,14 @@ function KnivesTable({
   now,
   columns,
   onReorder,
+  showBacklogAge,
 }: {
   knives: Knife[];
   ownerById: Record<string, Owner>;
   now: Date;
   columns: KnivesViewColumn[];
   onReorder?: (ids: string[]) => void;
+  showBacklogAge: boolean;
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -186,6 +196,7 @@ function KnivesTable({
           now={now}
           columns={columns}
           sortable={Boolean(onReorder)}
+          showBacklogAge={showBacklogAge}
         />
       ))}
     </TableBody>
@@ -245,12 +256,14 @@ function KnifeRow({
   now,
   columns,
   sortable,
+  showBacklogAge,
 }: {
   knife: Knife;
   owner?: Owner;
   now: Date;
   columns: KnivesViewColumn[];
   sortable: boolean;
+  showBacklogAge: boolean;
 }) {
   const router = useRouter();
   // useSortable is always rendered when sortable=true. When sortable=false
@@ -430,6 +443,28 @@ function KnifeRow({
               </TableCell>
             );
           case "added":
+            if (showBacklogAge && inBacklog(knife)) {
+              const bucket = backlogAgeBucket(knife, now);
+              const days = backlogAgeDays(knife, now);
+              return (
+                <TableCell key={c} className="text-xs">
+                  <span
+                    className={cn(
+                      "inline-flex items-center rounded-md border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider",
+                      bucket === "fresh" &&
+                        "border-border/60 bg-muted/40 text-muted-foreground",
+                      bucket === "warm" &&
+                        "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+                      bucket === "stale" &&
+                        "border-red-500/50 bg-red-500/10 text-red-700 dark:text-red-300",
+                    )}
+                    title={`Added ${days} day${days === 1 ? "" : "s"} ago`}
+                  >
+                    Waited {days}d
+                  </span>
+                </TableCell>
+              );
+            }
             return (
               <TableCell key={c} className="text-xs text-muted-foreground">
                 {ago(knife.createdAt.slice(0, 10), now)}

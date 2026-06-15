@@ -24,6 +24,29 @@ export function sortByPosition(knives: Knife[]): Knife[] {
   return [...positioned, ...unpositioned];
 }
 
+export type BacklogAge = "fresh" | "warm" | "stale";
+
+// Whole days from `createdAt` to `now`. Negative values clamp to 0 — a
+// knife with a future-dated `createdAt` (clock skew between machines)
+// shouldn't render as "older than time itself."
+export function backlogAgeDays(k: Knife, now: Date): number {
+  const then = new Date(k.createdAt);
+  if (Number.isNaN(then.getTime())) return 0;
+  const days = Math.floor((now.getTime() - then.getTime()) / 86_400_000);
+  return Math.max(0, days);
+}
+
+// Anchored to `createdAt` because there's no separate `backloggedAt`
+// field — see docs/todos/backlog-age-coloring.md for why we accept the
+// small misreport on knives that were flagged into backlog long after
+// being created.
+export function backlogAgeBucket(k: Knife, now: Date): BacklogAge {
+  const days = backlogAgeDays(k, now);
+  if (days < 7) return "fresh";
+  if (days < 28) return "warm";
+  return "stale";
+}
+
 export function nextBacklogPosition(knives: Knife[]): number {
   let max = 0;
   for (const k of knives) {

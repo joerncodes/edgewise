@@ -351,7 +351,7 @@ function SortableKnifeItem({
       >
         <GripVertical className="h-4 w-4" />
       </button>
-      <KnifeCard knife={knife} owner={owner} now={now} />
+      <KnifeCard knife={knife} owner={owner} now={now} showBacklogAge />
     </li>
   );
 }
