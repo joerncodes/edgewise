@@ -5,8 +5,12 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
-import { KnivesView } from "@/components/knives-view";
+import { ALL_COLUMNS, KnivesView } from "@/components/knives-view";
 import { ListViewToggle, useViewMode } from "@/components/list-view-toggle";
+import {
+  TableColumnsToggle,
+  useTableColumns,
+} from "@/components/table-columns-toggle";
 import { Markdown } from "@/components/markdown";
 import { PropertyList, PropertyRow } from "@/components/property-row";
 import { api } from "@/lib/api-client";
@@ -20,6 +24,11 @@ export default function SteelDetailPage() {
   const [steels, setSteels] = useState<Steel[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useViewMode();
+  const columns = useTableColumns({
+    routeKey: "steels",
+    available: ALL_COLUMNS,
+    pageHidden: ["steel"],
+  });
 
   useEffect(() => {
     Promise.all([api.listKnives(), api.listOwners(), api.listSteels()])
@@ -109,13 +118,14 @@ export default function SteelDetailPage() {
               Knives with this steel
             </h2>
             <ListViewToggle mode={viewMode} onModeChange={setViewMode} />
+            {viewMode === "table" && <TableColumnsToggle control={columns} />}
           </div>
           <KnivesView
             knives={knivesOfSteel}
             owners={owners}
             now={now}
             mode={viewMode}
-            hideColumns={["steel"]}
+            hideColumns={columns.hideColumns}
             gridClassName="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
           />
         </section>

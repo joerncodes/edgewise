@@ -23,8 +23,12 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
 import { KnifeCard } from "@/components/knife-card";
 import { KnifeFilters } from "@/components/knife-filters";
-import { KnivesView } from "@/components/knives-view";
+import { BACKLOG_COLUMNS, KnivesView } from "@/components/knives-view";
 import { ListViewToggle, useViewMode } from "@/components/list-view-toggle";
+import {
+  TableColumnsToggle,
+  useTableColumns,
+} from "@/components/table-columns-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -123,6 +127,11 @@ export default function BacklogPage() {
   }, [backlog, ownerById, filters, onLoanOnly, q, sort]);
 
   const now = useMemo(() => new Date(), []);
+
+  const columns = useTableColumns({
+    routeKey: "backlog",
+    available: BACKLOG_COLUMNS,
+  });
 
   // Drag-and-drop is only meaningful when the visual order matches
   // storage — i.e. manual sort with no filter or search narrowing it.
@@ -260,6 +269,7 @@ export default function BacklogPage() {
                 </SelectContent>
               </Select>
               <ListViewToggle mode={viewMode} onModeChange={setViewMode} />
+              {viewMode === "table" && <TableColumnsToggle control={columns} />}
             </div>
 
             {dndPaused && (
@@ -303,6 +313,7 @@ export default function BacklogPage() {
                 now={now}
                 mode={viewMode}
                 variant="backlog"
+                hideColumns={columns.hideColumns}
                 onReorder={dndEnabled && viewMode === "table" ? persistReorder : undefined}
               />
             )}

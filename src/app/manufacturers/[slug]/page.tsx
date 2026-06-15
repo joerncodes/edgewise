@@ -5,8 +5,12 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
-import { KnivesView } from "@/components/knives-view";
+import { ALL_COLUMNS, KnivesView } from "@/components/knives-view";
 import { ListViewToggle, useViewMode } from "@/components/list-view-toggle";
+import {
+  TableColumnsToggle,
+  useTableColumns,
+} from "@/components/table-columns-toggle";
 import { api } from "@/lib/api-client";
 import { findManufacturer } from "@/lib/manufacturers";
 import type { Knife, Owner } from "@/lib/storage/types";
@@ -17,6 +21,11 @@ export default function ManufacturerDetailPage() {
   const [owners, setOwners] = useState<Owner[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useViewMode();
+  const columns = useTableColumns({
+    routeKey: "manufacturers",
+    available: ALL_COLUMNS,
+    pageHidden: ["manufacturer"],
+  });
 
   useEffect(() => {
     Promise.all([api.listKnives(), api.listOwners()])
@@ -79,8 +88,9 @@ export default function ManufacturerDetailPage() {
         </p>
       </header>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
         <ListViewToggle mode={viewMode} onModeChange={setViewMode} />
+        {viewMode === "table" && <TableColumnsToggle control={columns} />}
       </div>
 
       <KnivesView
@@ -88,7 +98,7 @@ export default function ManufacturerDetailPage() {
         owners={owners}
         now={now}
         mode={viewMode}
-        hideColumns={["manufacturer"]}
+        hideColumns={columns.hideColumns}
         gridClassName="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
       />
     </div>

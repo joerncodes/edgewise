@@ -49,7 +49,7 @@ export type KnivesViewColumn =
   | "rating"
   | "added";
 
-const ALL_COLUMNS: KnivesViewColumn[] = [
+export const ALL_COLUMNS: KnivesViewColumn[] = [
   "thumbnail",
   "name",
   "owner",
@@ -62,7 +62,7 @@ const ALL_COLUMNS: KnivesViewColumn[] = [
   "rating",
 ];
 
-const BACKLOG_COLUMNS: KnivesViewColumn[] = [
+export const BACKLOG_COLUMNS: KnivesViewColumn[] = [
   "thumbnail",
   "name",
   "owner",
@@ -71,6 +71,10 @@ const BACKLOG_COLUMNS: KnivesViewColumn[] = [
   "steel",
   "added",
 ];
+
+export function columnsForVariant(variant: "all" | "backlog"): KnivesViewColumn[] {
+  return variant === "backlog" ? BACKLOG_COLUMNS : ALL_COLUMNS;
+}
 
 export function KnivesView({
   knives,

@@ -5,8 +5,12 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
-import { KnivesView } from "@/components/knives-view";
+import { ALL_COLUMNS, KnivesView } from "@/components/knives-view";
 import { ListViewToggle, useViewMode } from "@/components/list-view-toggle";
+import {
+  TableColumnsToggle,
+  useTableColumns,
+} from "@/components/table-columns-toggle";
 import { Markdown } from "@/components/markdown";
 import { api } from "@/lib/api-client";
 import { findHandle } from "@/lib/handles";
@@ -19,6 +23,7 @@ export default function HandleDetailPage() {
   const [handles, setHandles] = useState<Handle[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useViewMode();
+  const columns = useTableColumns({ routeKey: "handles", available: ALL_COLUMNS });
 
   useEffect(() => {
     Promise.all([api.listKnives(), api.listOwners(), api.listHandles()])
@@ -107,12 +112,14 @@ export default function HandleDetailPage() {
               Knives with this handle
             </h2>
             <ListViewToggle mode={viewMode} onModeChange={setViewMode} />
+            {viewMode === "table" && <TableColumnsToggle control={columns} />}
           </div>
           <KnivesView
             knives={knivesWithHandle}
             owners={owners}
             now={now}
             mode={viewMode}
+            hideColumns={columns.hideColumns}
             gridClassName="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
           />
         </section>

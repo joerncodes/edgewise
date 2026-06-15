@@ -13,8 +13,12 @@ import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { KnifeCard, lastSession } from "@/components/knife-card";
 import { KnifeFilters } from "@/components/knife-filters";
-import { KnivesView } from "@/components/knives-view";
+import { ALL_COLUMNS, KnivesView } from "@/components/knives-view";
 import { ListViewToggle, useViewMode } from "@/components/list-view-toggle";
+import {
+  TableColumnsToggle,
+  useTableColumns,
+} from "@/components/table-columns-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -147,6 +151,8 @@ export default function HomePage() {
 
   const activeFilterCount = totalActiveFilters(filters) + (onLoanOnly ? 1 : 0);
 
+  const columns = useTableColumns({ routeKey: "home", available: ALL_COLUMNS });
+
   return (
     <div className="space-y-8">
       <header className="flex items-center gap-6">
@@ -251,6 +257,7 @@ export default function HomePage() {
               </SelectContent>
             </Select>
             <ListViewToggle mode={viewMode} onModeChange={setViewMode} />
+            {viewMode === "table" && <TableColumnsToggle control={columns} />}
           </div>
 
           {loading ? (
@@ -287,6 +294,7 @@ export default function HomePage() {
                   owners={owners}
                   now={now}
                   mode={viewMode}
+                  hideColumns={columns.hideColumns}
                 />
               )}
             </div>

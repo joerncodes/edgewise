@@ -1,6 +1,6 @@
 ---
 filetype: todo
-status: open
+status: done
 ---
 
 # Checkboxes for table columns in table view

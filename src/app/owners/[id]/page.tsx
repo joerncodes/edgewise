@@ -5,8 +5,12 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { KnivesView } from "@/components/knives-view";
+import { ALL_COLUMNS, KnivesView } from "@/components/knives-view";
 import { ListViewToggle, useViewMode } from "@/components/list-view-toggle";
+import {
+  TableColumnsToggle,
+  useTableColumns,
+} from "@/components/table-columns-toggle";
 import { PropertyList, PropertyRow } from "@/components/property-row";
 import { api } from "@/lib/api-client";
 import type { Knife, Owner } from "@/lib/storage/types";
@@ -17,6 +21,11 @@ export default function OwnerDetailPage() {
   const [knives, setKnives] = useState<Knife[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useViewMode();
+  const columns = useTableColumns({
+    routeKey: "owners",
+    available: ALL_COLUMNS,
+    pageHidden: ["owner"],
+  });
 
   useEffect(() => {
     Promise.all([api.getOwner(id), api.listKnives()])
@@ -72,7 +81,10 @@ export default function OwnerDetailPage() {
             {knives.length === 1 ? "1 knife" : `${knives.length} knives`}
           </SectionLabel>
           {knives.length > 0 && (
-            <ListViewToggle mode={viewMode} onModeChange={setViewMode} />
+            <div className="flex items-center gap-2">
+              <ListViewToggle mode={viewMode} onModeChange={setViewMode} />
+              {viewMode === "table" && <TableColumnsToggle control={columns} />}
+            </div>
           )}
         </div>
         {knives.length === 0 ? (
@@ -83,7 +95,7 @@ export default function OwnerDetailPage() {
             owners={[owner]}
             now={now}
             mode={viewMode}
-            hideColumns={["owner"]}
+            hideColumns={columns.hideColumns}
             gridClassName="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
           />
         )}
