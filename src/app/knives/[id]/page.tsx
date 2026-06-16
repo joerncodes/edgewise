@@ -9,6 +9,7 @@ import {
   Handshake,
   Inbox,
   Pencil,
+  Plus,
   PocketKnife,
   Tags,
   Trash2,
@@ -20,6 +21,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { KnifeForm } from "@/components/knife-form";
 import { Photo } from "@/components/photo";
+import { SessionForm } from "@/components/session-form";
 import { Markdown } from "@/components/markdown";
 import { PropertyList, PropertyRow } from "@/components/property-row";
 import { Stars } from "@/components/stars";
@@ -68,6 +70,10 @@ export default function KnifeDetailPage() {
   const [allOwners, setAllOwners] = useState<Owner[]>([]);
   const [deleting, setDeleting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [addingSession, setAddingSession] = useState(false);
+  const [editingSessionDate, setEditingSessionDate] = useState<string | null>(null);
+  const [deletingSessionDate, setDeletingSessionDate] = useState<string | null>(null);
+  const [deletingSession, setDeletingSession] = useState(false);
 
   const abrasiveById = useMemo(
     () => Object.fromEntries(abrasives.map((a) => [a.id, a])),
@@ -139,6 +145,27 @@ export default function KnifeDetailPage() {
     }
   }
 
+  function handleSessionSaved(updated: Knife) {
+    setKnife(updated);
+    setAddingSession(false);
+    setEditingSessionDate(null);
+  }
+
+  async function handleSessionDelete(date: string) {
+    if (!knife || deletingSession) return;
+    setDeletingSession(true);
+    try {
+      const updated = await api.deleteSession(knife.id, date);
+      setKnife(updated);
+      setDeletingSessionDate(null);
+      toast.success(`Deleted session from ${date}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete session");
+    } finally {
+      setDeletingSession(false);
+    }
+  }
+
   async function toggleOnLoan() {
     if (!knife || togglingLoan) return;
     const next = !knife.onLoan;
@@ -161,7 +188,6 @@ export default function KnifeDetailPage() {
       .getKnife(id)
       .then(async (k) => {
         setKnife(k);
-        const hasAbrasives = k.sessions.some((s) => s.abrasives?.length);
         const tasks: Promise<unknown>[] = [];
         if (k.ownerId) {
           tasks.push(
@@ -173,9 +199,9 @@ export default function KnifeDetailPage() {
               }),
           );
         }
-        if (hasAbrasives) {
-          tasks.push(api.listAbrasives().then(setAbrasives).catch(() => {}));
-        }
+        // Always fetch — the session form needs them too, not just the
+        // existing session abrasive chips.
+        tasks.push(api.listAbrasives().then(setAbrasives).catch(() => {}));
         await Promise.all(tasks);
       })
       .catch((err) => toast.error(err instanceof Error ? err.message : "Failed to load"))
@@ -331,7 +357,28 @@ export default function KnifeDetailPage() {
           last={last}
           galleryImages={galleryImages}
           sortedSessions={sortedSessions}
+          abrasives={abrasives}
           abrasiveById={abrasiveById}
+          addingSession={addingSession}
+          editingSessionDate={editingSessionDate}
+          deletingSessionDate={deletingSessionDate}
+          deletingSession={deletingSession}
+          onAddSession={() => {
+            setEditingSessionDate(null);
+            setAddingSession(true);
+          }}
+          onEditSession={(date) => {
+            setAddingSession(false);
+            setEditingSessionDate(date);
+          }}
+          onDeleteSession={(date) => setDeletingSessionDate(date)}
+          onCancelSessionEdit={() => {
+            setAddingSession(false);
+            setEditingSessionDate(null);
+          }}
+          onSessionSaved={handleSessionSaved}
+          onConfirmDeleteSession={handleSessionDelete}
+          onCloseDeleteSession={() => setDeletingSessionDate(null)}
         />
       )}
     </div>
@@ -344,14 +391,38 @@ function DetailBody({
   last,
   galleryImages,
   sortedSessions,
+  abrasives,
   abrasiveById,
+  addingSession,
+  editingSessionDate,
+  deletingSessionDate,
+  deletingSession,
+  onAddSession,
+  onEditSession,
+  onDeleteSession,
+  onCancelSessionEdit,
+  onSessionSaved,
+  onConfirmDeleteSession,
+  onCloseDeleteSession,
 }: {
   knife: Knife;
   owner: Owner | null;
   last: SharpeningSession | undefined;
   galleryImages: Knife["images"];
   sortedSessions: SharpeningSession[];
+  abrasives: Abrasive[];
   abrasiveById: Record<string, Abrasive>;
+  addingSession: boolean;
+  editingSessionDate: string | null;
+  deletingSessionDate: string | null;
+  deletingSession: boolean;
+  onAddSession: () => void;
+  onEditSession: (date: string) => void;
+  onDeleteSession: (date: string) => void;
+  onCancelSessionEdit: () => void;
+  onSessionSaved: (knife: Knife) => void;
+  onConfirmDeleteSession: (date: string) => void;
+  onCloseDeleteSession: () => void;
 }) {
   return (
     <>
@@ -463,36 +534,129 @@ function DetailBody({
       )}
 
       <section className="space-y-3">
-        <SectionLabel>
-          {knife.sessions.length === 1 ? "1 sharpening" : `${knife.sessions.length} sharpenings`}
-        </SectionLabel>
+        <div className="flex items-center justify-between gap-3">
+          <SectionLabel>
+            {knife.sessions.length === 1
+              ? "1 sharpening"
+              : `${knife.sessions.length} sharpenings`}
+          </SectionLabel>
+          {!addingSession && editingSessionDate === null && (
+            <Button size="sm" onClick={onAddSession}>
+              <Plus className="h-3.5 w-3.5" />
+              Add session
+            </Button>
+          )}
+        </div>
+        {addingSession && (
+          <SessionForm
+            knifeId={knife.id}
+            abrasives={abrasives}
+            existingSessions={knife.sessions}
+            onSaved={onSessionSaved}
+            onCancel={onCancelSessionEdit}
+          />
+        )}
         {sortedSessions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">None yet.</p>
+          !addingSession && (
+            <p className="text-sm text-muted-foreground">None yet.</p>
+          )
         ) : (
           <ol className="relative space-y-5 border-l border-border/60 pl-6">
-            {sortedSessions.map((s, i) => (
-              <li key={i} className="relative">
-                <span className="absolute -left-[27px] top-2 h-2 w-2 rounded-full bg-border" />
-                <div className="text-xs uppercase tracking-wider text-muted-foreground font-mono">
-                  {formatDate(s.date)}
-                </div>
-                <div className="mt-0.5 flex items-center gap-3">
-                  <span className="text-2xl font-semibold tracking-tight font-mono">
-                    {s.angle}°
-                  </span>
-                  {s.rating !== undefined && <Stars value={s.rating} size="md" />}
-                </div>
-                {s.abrasives?.length ? (
-                  <SessionAbrasives abrasives={s.abrasives} abrasiveById={abrasiveById} />
-                ) : null}
-                {s.notes && (
-                  <p className="mt-1 text-sm text-muted-foreground">{s.notes}</p>
-                )}
-              </li>
-            ))}
+            {sortedSessions.map((s) => {
+              const isEditing = editingSessionDate === s.date;
+              return (
+                <li key={s.date} className="relative">
+                  <span className="absolute -left-[27px] top-2 h-2 w-2 rounded-full bg-border" />
+                  {isEditing ? (
+                    <SessionForm
+                      knifeId={knife.id}
+                      abrasives={abrasives}
+                      existingSessions={knife.sessions}
+                      initial={s}
+                      onSaved={onSessionSaved}
+                      onCancel={onCancelSessionEdit}
+                    />
+                  ) : (
+                    <>
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="text-xs uppercase tracking-wider text-muted-foreground font-mono">
+                            {formatDate(s.date)}
+                          </div>
+                          <div className="mt-0.5 flex items-center gap-3">
+                            <span className="text-2xl font-semibold tracking-tight font-mono">
+                              {s.angle}°
+                            </span>
+                            {s.rating !== undefined && (
+                              <Stars value={s.rating} size="md" />
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`Edit session from ${s.date}`}
+                            onClick={() => onEditSession(s.date)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`Delete session from ${s.date}`}
+                            onClick={() => onDeleteSession(s.date)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                      {s.abrasives?.length ? (
+                        <SessionAbrasives
+                          abrasives={s.abrasives}
+                          abrasiveById={abrasiveById}
+                        />
+                      ) : null}
+                      {s.notes && (
+                        <p className="mt-1 text-sm text-muted-foreground">{s.notes}</p>
+                      )}
+                    </>
+                  )}
+                </li>
+              );
+            })}
           </ol>
         )}
       </section>
+      <AlertDialog
+        open={deletingSessionDate !== null}
+        onOpenChange={(open) => {
+          if (!open) onCloseDeleteSession();
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete session from {deletingSessionDate}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Removes this single sharpening event. Cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={deletingSession}
+              onClick={() =>
+                deletingSessionDate && onConfirmDeleteSession(deletingSessionDate)
+              }
+            >
+              {deletingSession ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {knife.notes && (
         <section className="space-y-3">
