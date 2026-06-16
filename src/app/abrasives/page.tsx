@@ -1,9 +1,10 @@
 "use client";
 
-import { ChevronRight, Gem } from "lucide-react";
+import { ChevronRight, Gem, Plus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
+import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api-client";
 import { isStrop, rankAbrasives } from "@/lib/abrasives";
 import type { Abrasive, Knife } from "@/lib/storage/types";
@@ -26,17 +27,25 @@ export default function AbrasivesPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight text-brass">
-        <Gem className="h-7 w-7" />
-        Abrasives
-      </h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight text-brass">
+          <Gem className="h-7 w-7" />
+          Abrasives
+        </h1>
+        <Link href="/abrasives/new">
+          <Button size="sm">
+            <Plus className="h-3.5 w-3.5" />
+            Add abrasive
+          </Button>
+        </Link>
+      </div>
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : ranked.length === 0 ? (
         <EmptyState
           title="No abrasives yet"
-          hint="Add one via POST /api/abrasives — name, grit, optional type, compound, substrate, notes."
+          hint="Add the first one to start tracking sharpening progressions."
         />
       ) : (
         <ul className="-mx-2 divide-y divide-border/70">

@@ -1,19 +1,37 @@
 "use client";
 
-import { ArrowLeft, Gem, PocketKnife } from "lucide-react";
+import { ArrowLeft, Gem, Pencil, PocketKnife, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { AbrasiveForm } from "@/components/abrasive-form";
 import { EmptyState } from "@/components/empty-state";
 import { ImageGallery } from "@/components/image-gallery";
 import { Photo } from "@/components/photo";
 import { Markdown } from "@/components/markdown";
 import { PropertyList, PropertyRow } from "@/components/property-row";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { api } from "@/lib/api-client";
 import { isStrop, usagesForAbrasive } from "@/lib/abrasives";
 import { cn } from "@/lib/utils";
-import type { Abrasive, Knife } from "@/lib/storage/types";
+import type { Abrasive, AbrasiveInput, Knife } from "@/lib/storage/types";
 
 const dateFmt = new Intl.DateTimeFormat("de-DE", { dateStyle: "short" });
 
@@ -25,10 +43,13 @@ function formatDate(iso: string): string {
 
 export default function AbrasiveDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const [abrasive, setAbrasive] = useState<Abrasive | null>(null);
   const [knives, setKnives] = useState<Knife[]>([]);
   const [abrasives, setAbrasives] = useState<Abrasive[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     Promise.all([api.getAbrasive(id), api.listKnives(), api.listAbrasives()])
@@ -86,6 +107,31 @@ export default function AbrasiveDetailPage() {
     return updated.images;
   }
 
+  async function handleSave(values: AbrasiveInput) {
+    try {
+      const updated = await api.updateAbrasive(abrasiveId, values);
+      setAbrasive(updated);
+      setEditing(false);
+      toast.success(`Saved ${updated.name}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save");
+    }
+  }
+
+  async function handleDelete() {
+    if (deleting) return;
+    const name = abrasive!.name;
+    setDeleting(true);
+    try {
+      await api.deleteAbrasive(abrasiveId);
+      toast.success(`Deleted ${name}`);
+      router.push("/abrasives");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete");
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="space-y-10">
       {hero && (
@@ -106,10 +152,69 @@ export default function AbrasiveDetailPage() {
           <Gem className="h-3 w-3" />
           All abrasives
         </Link>
-        <h1 className="flex items-center gap-3 text-4xl font-semibold tracking-tight text-brass">
-          <Gem className="h-8 w-8" />
-          {abrasive.name}
-        </h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="flex items-center gap-3 text-4xl font-semibold tracking-tight text-brass">
+            <Gem className="h-8 w-8" />
+            {abrasive.name}
+          </h1>
+          {!editing && (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+                <Pencil className="h-3.5 w-3.5" />
+                Edit
+              </Button>
+              {usages.length === 0 ? (
+                <AlertDialog>
+                  <AlertDialogTrigger
+                    render={
+                      <Button variant="destructive" size="sm">
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Delete
+                      </Button>
+                    }
+                  />
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete {abrasive.name}?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Removes the abrasive record and any images on disk.
+                        Cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        variant="destructive"
+                        disabled={deleting}
+                        onClick={handleDelete}
+                      >
+                        {deleting ? "Deleting…" : "Delete"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <span tabIndex={0} className="inline-block">
+                        <Button variant="destructive" size="sm" disabled>
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Delete
+                        </Button>
+                      </span>
+                    }
+                  />
+                  <TooltipContent>
+                    Referenced by {usages.length}{" "}
+                    {usages.length === 1 ? "session" : "sessions"} — remove from
+                    those sessions first.
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+          )}
+        </div>
         <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
           {strop && abrasive.compound ? (
             <span>{abrasive.compound}</span>
@@ -128,31 +233,52 @@ export default function AbrasiveDetailPage() {
         </p>
       </header>
 
-      <section>
-        <PropertyList>
-          <PropertyRow label="Grit">
-            <span className="font-mono">{abrasive.grit}</span>
-          </PropertyRow>
-          {abrasive.type && <PropertyRow label="Type">{abrasive.type}</PropertyRow>}
-          {abrasive.compound && (
-            <PropertyRow label="Compound">{abrasive.compound}</PropertyRow>
-          )}
-          {abrasive.substrate && (
-            <PropertyRow label="Substrate">{abrasive.substrate}</PropertyRow>
-          )}
-        </PropertyList>
-      </section>
-
-      <section className="space-y-3">
-        {abrasive.notes ? (
-          <Markdown>{abrasive.notes}</Markdown>
-        ) : (
-          <EmptyState
-            title="No notes yet"
-            hint="PATCH /api/abrasives/<id> with a markdown `notes` body — soak time, dishing observations, anything worth keeping next to the abrasive."
+      {editing ? (
+        <section className="max-w-xl">
+          <AbrasiveForm
+            defaultValues={{
+              name: abrasive.name,
+              grit: abrasive.grit,
+              type: abrasive.type ?? "",
+              compound: abrasive.compound ?? "",
+              substrate: abrasive.substrate ?? "",
+              notes: abrasive.notes ?? "",
+            }}
+            submitLabel="Save changes"
+            onSubmit={handleSave}
+            onCancel={() => setEditing(false)}
+            pinnedSlug={abrasive.id}
           />
-        )}
-      </section>
+        </section>
+      ) : (
+        <>
+          <section>
+            <PropertyList>
+              <PropertyRow label="Grit">
+                <span className="font-mono">{abrasive.grit}</span>
+              </PropertyRow>
+              {abrasive.type && <PropertyRow label="Type">{abrasive.type}</PropertyRow>}
+              {abrasive.compound && (
+                <PropertyRow label="Compound">{abrasive.compound}</PropertyRow>
+              )}
+              {abrasive.substrate && (
+                <PropertyRow label="Substrate">{abrasive.substrate}</PropertyRow>
+              )}
+            </PropertyList>
+          </section>
+
+          <section className="space-y-3">
+            {abrasive.notes ? (
+              <Markdown>{abrasive.notes}</Markdown>
+            ) : (
+              <EmptyState
+                title="No notes yet"
+                hint="Use Edit to add soak time, dishing observations, or anything worth keeping next to the abrasive."
+              />
+            )}
+          </section>
+        </>
+      )}
 
       <ImageGallery
         images={abrasive.images}

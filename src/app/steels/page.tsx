@@ -1,9 +1,10 @@
 "use client";
 
-import { Atom, ChevronRight } from "lucide-react";
+import { Atom, ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
+import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api-client";
 import { groupSteels } from "@/lib/steels";
 import type { Knife, Steel } from "@/lib/storage/types";
@@ -33,10 +34,18 @@ export default function SteelsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight text-brass">
-        <Atom className="h-7 w-7" />
-        Steels
-      </h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight text-brass">
+          <Atom className="h-7 w-7" />
+          Steels
+        </h1>
+        <Link href="/steels/new">
+          <Button size="sm">
+            <Plus className="h-3.5 w-3.5" />
+            Add steel
+          </Button>
+        </Link>
+      </div>
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
