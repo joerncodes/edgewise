@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Pencil, Trash2, User } from "lucide-react";
+import { ArrowLeft, Pencil, Plus, Trash2, User } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -200,16 +200,26 @@ export default function OwnerDetailPage() {
           )}
 
           <section className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <SectionLabel>
                 {knivesCount === 1 ? "1 knife" : `${knivesCount} knives`}
               </SectionLabel>
-              {knivesCount > 0 && (
-                <div className="flex items-center gap-2">
-                  <ListViewToggle mode={viewMode} onModeChange={setViewMode} />
-                  {viewMode === "table" && <TableColumnsToggle control={columns} />}
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                {knivesCount > 0 && (
+                  <>
+                    <ListViewToggle mode={viewMode} onModeChange={setViewMode} />
+                    {viewMode === "table" && (
+                      <TableColumnsToggle control={columns} />
+                    )}
+                  </>
+                )}
+                <Link href={`/knives/new?ownerId=${owner.id}`}>
+                  <Button size="sm" variant="outline">
+                    <Plus className="h-3.5 w-3.5" />
+                    Add knife
+                  </Button>
+                </Link>
+              </div>
             </div>
             {knivesCount === 0 ? (
               <p className="text-sm text-muted-foreground">No knives for this owner yet.</p>

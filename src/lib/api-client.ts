@@ -61,6 +61,22 @@ export const api = {
       `/api/knives/${knifeId}/images/${encodeURIComponent(filename)}`,
       { method: "DELETE" },
     ).then((r) => r.knife),
+  // Multipart bypasses the JSON `request` helper — the browser sets
+  // its own Content-Type boundary, so we don't.
+  uploadKnifeImage: async (knifeId: string, file: File, caption?: string) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    if (caption) fd.append("caption", caption);
+    const res = await fetch(`/api/knives/${knifeId}/images`, {
+      method: "POST",
+      body: fd,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.error ?? `${res.status} ${res.statusText}`);
+    }
+    return (await res.json()).knife as Knife;
+  },
 
   listOwners: () => request<{ owners: Owner[] }>("/api/owners").then((r) => r.owners),
   getOwner: (id: string) => request<{ owner: Owner }>(`/api/owners/${id}`).then((r) => r.owner),

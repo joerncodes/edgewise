@@ -6,6 +6,7 @@ import {
   Handshake,
   Inbox,
   PocketKnife,
+  Plus,
   Sparkles,
   User,
 } from "lucide-react";
@@ -281,6 +282,12 @@ export default function HomePage() {
             </Select>
             <ListViewToggle mode={viewMode} onModeChange={setViewMode} />
             {viewMode === "table" && <TableColumnsToggle control={columns} />}
+            <Link href="/knives/new" className="ml-auto">
+              <Button size="sm" className="h-9">
+                <Plus className="h-3.5 w-3.5" />
+                Add knife
+              </Button>
+            </Link>
           </div>
 
           {loading ? (
