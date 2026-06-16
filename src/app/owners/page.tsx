@@ -1,9 +1,10 @@
 "use client";
 
-import { ChevronRight, User } from "lucide-react";
+import { ChevronRight, Plus, User } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
+import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api-client";
 import type { Owner } from "@/lib/storage/types";
 
@@ -20,17 +21,25 @@ export default function OwnersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight text-brass">
-        <User className="h-7 w-7" />
-        Owners
-      </h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight text-brass">
+          <User className="h-7 w-7" />
+          Owners
+        </h1>
+        <Link href="/owners/new">
+          <Button size="sm">
+            <Plus className="h-3.5 w-3.5" />
+            Add owner
+          </Button>
+        </Link>
+      </div>
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : owners.length === 0 ? (
         <EmptyState
           title="No owners yet"
-          hint="Create an owner through the API before logging knives for them."
+          hint="Add the first one so you can start logging their knives."
         />
       ) : (
         <ul className="-mx-2 divide-y divide-border/70">
