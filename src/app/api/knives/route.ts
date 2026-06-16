@@ -41,6 +41,7 @@ export async function POST(req: Request) {
       steel: input.steel ?? "",
       handle: input.handle ?? "",
       type: input.type ?? "",
+      subtype: input.subtype ?? "",
       notes: input.notes ?? "",
       backlog,
       backlogPosition,

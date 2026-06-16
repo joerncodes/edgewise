@@ -90,6 +90,7 @@ Fields:
 | `steel`        | string    | no       |                                    |
 | `handle`       | string    | no       | handle material — G10, micarta, wood, stag, horn… |
 | `type`         | string    | no       | chef, paring, santoku, pocket…     |
+| `subtype`      | string    | no       | qualifier on `type` (folder/fixed blade, Japanese/Western, …) |
 | `notes`        | string    | no       | the markdown body                  |
 | `backlog`      | boolean   | no       | true while waiting to be sharpened |
 | `backlogPosition` | number | no       | manual queue position (1, 2, 3, …) |
@@ -103,6 +104,14 @@ when the knife is dropped off, and the `/backlog` page will surface it.
 Adding a session via `POST /api/knives/{id}/sessions` clears the flag
 automatically — sharpening obviously means it's no longer waiting. Absent
 or `false` means "not in the backlog".
+
+`subtype` is a free-form qualifier on `type`. Same open-list shape as
+`manufacturer` / `steel` / `handle`: any string is valid, facets surface
+the observed values. Pocket Knife → `folder` / `fixed blade`; Chef's
+Knife → `Japanese` / `Western`; etc. The UI renders `type — subtype`
+where both are present. Empty string and missing field are equivalent.
+This was added in a non-breaking way (additive only) — existing knives
+keep no `subtype` and that stays valid.
 
 `onLoan` is orthogonal to `ownerId`: every knife already has an owner,
 this flag captures the physical state ("not mine, but in my house right

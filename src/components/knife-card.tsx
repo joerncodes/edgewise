@@ -162,6 +162,14 @@ export function KnifeCard({
               {knife.type}
             </Link>
           )}
+          {knife.type && knife.subtype && (
+            <Link
+              href={`/types/${slugify(knife.type)}?subtype=${encodeURIComponent(knife.subtype)}`}
+              className="inline-flex items-center rounded-md border border-steel/30 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-steel/80 hover:bg-steel/10"
+            >
+              {knife.subtype}
+            </Link>
+          )}
           {knife.steel && (
             <Link
               href={`/steels/${slugify(knife.steel)}`}

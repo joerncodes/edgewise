@@ -376,13 +376,27 @@ function KnifeRow({
             return (
               <TableCell key={c}>
                 {knife.type ? (
-                  <Link
-                    href={`/types/${slugify(knife.type)}`}
-                    className="relative z-10 text-steel hover:underline"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {knife.type}
-                  </Link>
+                  <span className="inline-flex flex-wrap items-baseline gap-x-1">
+                    <Link
+                      href={`/types/${slugify(knife.type)}`}
+                      className="relative z-10 text-steel hover:underline"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {knife.type}
+                    </Link>
+                    {knife.subtype && (
+                      <>
+                        <span className="text-muted-foreground/60">—</span>
+                        <Link
+                          href={`/types/${slugify(knife.type)}?subtype=${encodeURIComponent(knife.subtype)}`}
+                          className="relative z-10 text-xs text-muted-foreground hover:text-foreground hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {knife.subtype}
+                        </Link>
+                      </>
+                    )}
+                  </span>
                 ) : (
                   <Empty />
                 )}

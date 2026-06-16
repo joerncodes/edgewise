@@ -169,6 +169,7 @@ KnifeInput = {
   steel?: string
   handle?: string
   type?: string
+  subtype?: string  // qualifier on `type` (e.g. folder, fixed blade)
   notes?: string
   backlog?: boolean   // true while waiting on the bench; auto-cleared on next session
   onLoan?: boolean    // true when physically here but not mine

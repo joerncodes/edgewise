@@ -10,16 +10,19 @@ export interface Facets {
   steels: FacetValue[];
   handles: FacetValue[];
   types: FacetValue[];
+  subtypes: FacetValue[];
   owners: FacetValue[];
 }
 
 // One categorical attribute on `Knife` that the UI lets users filter by.
 // Ordered for default rendering — owner first, narrowing attributes
-// after.
+// after. `subtype` sits next to `type` so "Pocket Knife → folder"
+// reads top-to-bottom in the sidebar.
 export const FACET_KEYS = [
   "owner",
   "manufacturer",
   "type",
+  "subtype",
   "steel",
   "handle",
 ] as const;
@@ -32,6 +35,7 @@ export function emptyFilterState(): FilterState {
     owner: new Set(),
     manufacturer: new Set(),
     type: new Set(),
+    subtype: new Set(),
     steel: new Set(),
     handle: new Set(),
   };
@@ -68,6 +72,8 @@ function fieldFor(key: FacetKey): (k: Knife) => string | undefined {
       return (k) => k.manufacturer;
     case "type":
       return (k) => k.type;
+    case "subtype":
+      return (k) => k.subtype;
     case "steel":
       return (k) => k.steel;
     case "handle":
@@ -103,6 +109,7 @@ export function computeFacets(knives: Knife[]): Facets {
     steels: tally(knives, (k) => k.steel),
     handles: tally(knives, (k) => k.handle),
     types: tally(knives, (k) => k.type),
+    subtypes: tally(knives, (k) => k.subtype),
     owners: tally(knives, (k) => k.ownerId),
   };
 }

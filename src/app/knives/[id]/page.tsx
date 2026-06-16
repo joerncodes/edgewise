@@ -213,13 +213,26 @@ export default function KnifeDetailPage() {
           )}
           <PropertyRow label="Type">
             {knife.type ? (
-              <Link
-                href={`/types/${slugify(knife.type)}`}
-                className="inline-flex items-center gap-1.5 hover:underline"
-              >
-                <Tags className="h-3.5 w-3.5" />
-                {knife.type}
-              </Link>
+              <span className="inline-flex flex-wrap items-baseline gap-x-1.5">
+                <Link
+                  href={`/types/${slugify(knife.type)}`}
+                  className="inline-flex items-center gap-1.5 hover:underline"
+                >
+                  <Tags className="h-3.5 w-3.5" />
+                  {knife.type}
+                </Link>
+                {knife.subtype && (
+                  <>
+                    <span className="text-muted-foreground/60">—</span>
+                    <Link
+                      href={`/types/${slugify(knife.type)}?subtype=${encodeURIComponent(knife.subtype)}`}
+                      className="text-sm text-muted-foreground hover:text-foreground hover:underline"
+                    >
+                      {knife.subtype}
+                    </Link>
+                  </>
+                )}
+              </span>
             ) : null}
           </PropertyRow>
           <PropertyRow label="Manufacturer">

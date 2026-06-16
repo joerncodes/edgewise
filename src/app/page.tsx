@@ -94,6 +94,7 @@ export default function HomePage() {
         k.name.toLowerCase().includes(needle) ||
         ownerName.toLowerCase().includes(needle) ||
         (k.type ?? "").toLowerCase().includes(needle) ||
+        (k.subtype ?? "").toLowerCase().includes(needle) ||
         (k.steel ?? "").toLowerCase().includes(needle) ||
         (k.handle ?? "").toLowerCase().includes(needle)
       );

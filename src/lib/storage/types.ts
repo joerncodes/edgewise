@@ -51,6 +51,11 @@ export const KnifeSchema = z.object({
   steel: z.string().optional().default(""),
   handle: z.string().optional().default(""),
   type: z.string().optional().default(""),
+  // Free-form qualifier on `type` — "folder" / "fixed blade" under
+  // Pocket Knife, "Japanese" / "Western" under Chef's Knife, etc.
+  // Same open-list shape as the other categorical fields; faceted
+  // from observed values rather than a fixed enum.
+  subtype: z.string().optional().default(""),
   notes: z.string().optional().default(""),
   backlog: z.boolean().optional().default(false),
   backlogPosition: z.number().int().positive().optional(),

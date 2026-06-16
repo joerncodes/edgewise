@@ -70,6 +70,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
       steel: merged.steel ?? "",
       handle: merged.handle ?? "",
       type: merged.type ?? "",
+      subtype: merged.subtype ?? "",
       notes: merged.notes ?? "",
       backlog: merged.backlog ?? false,
       backlogPosition,
