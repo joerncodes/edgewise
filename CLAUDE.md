@@ -47,11 +47,15 @@ Key invariants — break these and the rest stops making sense:
 - **The UI does not import `getStorage()`.** All reads and writes go through
   `/api/*`. The fetch layer lives in `src/lib/api-client.ts`. This is what
   lets external clients (Claude, curl, scripts) hit the exact same surface.
-- **The UI is read-only for now.** No create / edit / delete buttons.
-  Writes happen via the API (see [ADR-0006](docs/adrs/0006-api-only-crud.md)).
-  When the owner asks for UI write flows later, add them — but keep the API
-  as the source of truth and don't introduce Server Actions as a parallel
-  write path.
+- **UI writes call the same `/api/*` contract.** Forms are
+  client-side, validated with the existing Zod `*InputSchema` via
+  `react-hook-form` + `@hookform/resolvers`, and submit through
+  `src/lib/api-client.ts`. No Server Actions — that would fork the
+  write path. Convention: create on a dedicated page (`/<entity>/new`),
+  edit inline on the detail page, delete via `AlertDialog`,
+  refetch after mutation. See [ADR-0013](docs/adrs/0013-ui-write-flows-via-api.md)
+  (which supersedes [ADR-0006](docs/adrs/0006-api-only-crud.md)'s
+  read-only stance while preserving the API-as-contract half).
 - **`Storage` is the seam.** Only `getStorage()` in `src/lib/storage/index.ts`
   knows which implementation is in use. To add SQLite/Postgres, implement
   `Storage` and swap there — do not branch on the implementation elsewhere.

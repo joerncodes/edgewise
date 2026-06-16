@@ -2,9 +2,17 @@
 filetype: adr
 id: "0006"
 title: All CRUD goes through the HTTP API; UI is read-only for now
-status: accepted
+status: superseded
+supersededBy: "0013"
 date: 2026-06-09
 ---
+
+> **Superseded by [ADR-0013](0013-ui-write-flows-via-api.md).** The
+> "API as the only write path" half of this decision stays — UI
+> writes still go through `/api/*` via `src/lib/api-client.ts`, no
+> Server Actions. What changed is the "UI is read-only" half: write
+> flows are growing in the UI on top of the same contract. See
+> ADR-0013.
 
 # Context
 
