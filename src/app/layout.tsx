@@ -1,4 +1,4 @@
-import { BarChart3, Inbox, NotebookPen } from "lucide-react";
+import { BarChart3, Handshake, Inbox, NotebookPen } from "lucide-react";
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans, Oswald } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
@@ -69,6 +69,10 @@ export default async function RootLayout({
                     <NavLink href="/backlog">
                       <Inbox className="h-4 w-4" />
                       Backlog
+                    </NavLink>
+                    <NavLink href="/on-loan">
+                      <Handshake className="h-4 w-4" />
+                      On loan
                     </NavLink>
                     <NavLink href="/stats">
                       <BarChart3 className="h-4 w-4" />

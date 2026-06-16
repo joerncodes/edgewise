@@ -3,6 +3,7 @@
 import {
   ChevronRight,
   Filter,
+  Handshake,
   Inbox,
   PocketKnife,
   Sparkles,
@@ -132,6 +133,10 @@ export default function HomePage() {
     () => knives.filter(inBacklog).length,
     [knives],
   );
+  const onLoanCount = useMemo(
+    () => knives.filter((k) => k.onLoan).length,
+    [knives],
+  );
 
   // Hero is hidden while the user is actively narrowing — search text
   // or any facet selection. The hero is a landing-page focal point, not
@@ -172,18 +177,35 @@ export default function HomePage() {
             <span className="font-mono">{owners.length}</span>
             <span>{owners.length === 1 ? "owner" : "owners"}</span>
           </p>
-          {backlogCount > 0 && (
-            <Link
-              href="/backlog"
-              className="group flex items-center gap-3 rounded-md border border-brass/30 bg-brass/5 px-4 py-3 transition-colors hover:border-brass/50 hover:bg-brass/10 dark:border-brass/25 dark:bg-brass/[0.06]"
-            >
-              <Inbox className="h-4 w-4 text-brass" />
-              <span className="text-sm text-foreground">
-                <span className="font-mono">{backlogCount}</span>{" "}
-                {backlogCount === 1 ? "knife" : "knives"} in the backlog
-              </span>
-              <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground" />
-            </Link>
+          {(backlogCount > 0 || onLoanCount > 0) && (
+            <div className="flex flex-col gap-2 sm:flex-row">
+              {backlogCount > 0 && (
+                <Link
+                  href="/backlog"
+                  className="group flex flex-1 items-center gap-3 rounded-md border border-brass/30 bg-brass/5 px-4 py-3 transition-colors hover:border-brass/50 hover:bg-brass/10 dark:border-brass/25 dark:bg-brass/[0.06]"
+                >
+                  <Inbox className="h-4 w-4 text-brass" />
+                  <span className="text-sm text-foreground">
+                    <span className="font-mono">{backlogCount}</span>{" "}
+                    {backlogCount === 1 ? "knife" : "knives"} in the backlog
+                  </span>
+                  <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground" />
+                </Link>
+              )}
+              {onLoanCount > 0 && (
+                <Link
+                  href="/on-loan"
+                  className="group flex flex-1 items-center gap-3 rounded-md border border-brass/30 bg-brass/5 px-4 py-3 transition-colors hover:border-brass/50 hover:bg-brass/10 dark:border-brass/25 dark:bg-brass/[0.06]"
+                >
+                  <Handshake className="h-4 w-4 text-brass" />
+                  <span className="text-sm text-foreground">
+                    <span className="font-mono">{onLoanCount}</span>{" "}
+                    {onLoanCount === 1 ? "knife" : "knives"} on loan
+                  </span>
+                  <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground" />
+                </Link>
+              )}
+            </div>
           )}
         </div>
       </header>
