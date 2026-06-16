@@ -26,6 +26,11 @@ export async function PATCH(req: Request, { params }: Ctx) {
     if (!existing) return notFound("abrasive not found");
 
     const merged = AbrasiveInputSchema.parse({ ...existing, ...body });
+    // Same images-presence trick as the knife PATCH (see
+    // ui-image-upload.md). Schema defaults `images` to [], so we
+    // need the raw body to know whether the caller asked for an
+    // images update or just left the field out.
+    const wantsImagesUpdate = "images" in (body as Record<string, unknown>);
     const updated = {
       ...existing,
       name: merged.name,
@@ -34,6 +39,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
       compound: merged.compound ?? "",
       substrate: merged.substrate ?? "",
       notes: merged.notes ?? "",
+      images: wantsImagesUpdate ? merged.images : existing.images,
       updatedAt: nowIso(),
     };
     await storage.saveAbrasive(updated);

@@ -19,6 +19,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { ImageGallery } from "@/components/image-gallery";
 import { KnifeForm } from "@/components/knife-form";
 import { Photo } from "@/components/photo";
 import { SessionForm } from "@/components/session-form";
@@ -145,6 +146,29 @@ export default function KnifeDetailPage() {
     }
   }
 
+  async function handleImageUpload(file: File): Promise<Knife["images"]> {
+    if (!knife) return [];
+    const updated = await api.uploadKnifeImage(knife.id, file);
+    setKnife(updated);
+    return updated.images;
+  }
+
+  async function handleSaveImages(
+    next: Knife["images"],
+  ): Promise<Knife["images"]> {
+    if (!knife) return [];
+    const updated = await api.updateKnife(knife.id, { images: next });
+    setKnife(updated);
+    return updated.images;
+  }
+
+  async function handleImageDelete(filename: string): Promise<Knife["images"]> {
+    if (!knife) return [];
+    const updated = await api.deleteImage(knife.id, filename);
+    setKnife(updated);
+    return updated.images;
+  }
+
   function handleSessionSaved(updated: Knife) {
     setKnife(updated);
     setAddingSession(false);
@@ -214,7 +238,6 @@ export default function KnifeDetailPage() {
   const sortedSessions = [...knife.sessions].sort((a, b) => b.date.localeCompare(a.date));
   const last = sortedSessions[0];
   const hero = knife.images[0];
-  const galleryImages = knife.images.slice(1);
 
   return (
     <div className="space-y-12">
@@ -355,10 +378,12 @@ export default function KnifeDetailPage() {
           knife={knife}
           owner={owner}
           last={last}
-          galleryImages={galleryImages}
           sortedSessions={sortedSessions}
           abrasives={abrasives}
           abrasiveById={abrasiveById}
+          onImageUpload={handleImageUpload}
+          onSaveImages={handleSaveImages}
+          onImageDelete={handleImageDelete}
           addingSession={addingSession}
           editingSessionDate={editingSessionDate}
           deletingSessionDate={deletingSessionDate}
@@ -389,10 +414,12 @@ function DetailBody({
   knife,
   owner,
   last,
-  galleryImages,
   sortedSessions,
   abrasives,
   abrasiveById,
+  onImageUpload,
+  onSaveImages,
+  onImageDelete,
   addingSession,
   editingSessionDate,
   deletingSessionDate,
@@ -408,10 +435,12 @@ function DetailBody({
   knife: Knife;
   owner: Owner | null;
   last: SharpeningSession | undefined;
-  galleryImages: Knife["images"];
   sortedSessions: SharpeningSession[];
   abrasives: Abrasive[];
   abrasiveById: Record<string, Abrasive>;
+  onImageUpload: (file: File) => Promise<Knife["images"]>;
+  onSaveImages: (images: Knife["images"]) => Promise<Knife["images"]>;
+  onImageDelete: (filename: string) => Promise<Knife["images"]>;
   addingSession: boolean;
   editingSessionDate: string | null;
   deletingSessionDate: string | null;
@@ -509,29 +538,14 @@ function DetailBody({
         </PropertyList>
       </section>
 
-      {galleryImages.length > 0 && (
-        <section className="space-y-3">
-          <SectionLabel>
-            {galleryImages.length === 1 ? "1 more image" : `${galleryImages.length} more images`}
-          </SectionLabel>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {galleryImages.map((img) => (
-              <figure key={img.filename} className="space-y-1.5">
-                <Photo
-                  src={api.imageUrl(knife.id, img.filename)}
-                  alt={img.caption || knife.name}
-                  className="w-full overflow-hidden rounded-md bg-muted/40"
-                  imgClassName="h-auto"
-                  loadingMinHeight="10rem"
-                />
-                {img.caption && (
-                  <figcaption className="text-xs text-muted-foreground">{img.caption}</figcaption>
-                )}
-              </figure>
-            ))}
-          </div>
-        </section>
-      )}
+      <ImageGallery
+        images={knife.images}
+        imageUrl={(filename, size) => api.imageUrl(knife.id, filename, size)}
+        alt={knife.name}
+        onUpload={onImageUpload}
+        onSaveImages={onSaveImages}
+        onDelete={onImageDelete}
+      />
 
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3">

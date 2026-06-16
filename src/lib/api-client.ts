@@ -145,6 +145,24 @@ export const api = {
       `/api/abrasives/${abrasiveId}/images/${encodeURIComponent(filename)}`,
       { method: "DELETE" },
     ).then((r) => r.abrasive),
+  uploadAbrasiveImage: async (
+    abrasiveId: string,
+    file: File,
+    caption?: string,
+  ) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    if (caption) fd.append("caption", caption);
+    const res = await fetch(`/api/abrasives/${abrasiveId}/images`, {
+      method: "POST",
+      body: fd,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.error ?? `${res.status} ${res.statusText}`);
+    }
+    return (await res.json()).abrasive as Abrasive;
+  },
 
   getStats: () => request<Stats>("/api/stats"),
   getDiary: () => request<Diary>("/api/diary"),

@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
+import { ImageGallery } from "@/components/image-gallery";
 import { Photo } from "@/components/photo";
 import { Markdown } from "@/components/markdown";
 import { PropertyList, PropertyRow } from "@/components/property-row";
@@ -64,8 +65,26 @@ export default function AbrasiveDetailPage() {
   }
 
   const hero = abrasive.images[0];
-  const galleryImages = abrasive.images.slice(1);
   const strop = isStrop(abrasive);
+  const abrasiveId = abrasive.id;
+
+  async function handleImageUpload(file: File) {
+    const updated = await api.uploadAbrasiveImage(abrasiveId, file);
+    setAbrasive(updated);
+    return updated.images;
+  }
+
+  async function handleSaveImages(next: Abrasive["images"]) {
+    const updated = await api.updateAbrasive(abrasiveId, { images: next });
+    setAbrasive(updated);
+    return updated.images;
+  }
+
+  async function handleImageDelete(filename: string) {
+    const updated = await api.deleteAbrasiveImage(abrasiveId, filename);
+    setAbrasive(updated);
+    return updated.images;
+  }
 
   return (
     <div className="space-y-10">
@@ -135,29 +154,16 @@ export default function AbrasiveDetailPage() {
         )}
       </section>
 
-      {galleryImages.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="font-heading text-sm uppercase tracking-wider text-foreground/80">
-            {galleryImages.length === 1 ? "1 more image" : `${galleryImages.length} more images`}
-          </h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {galleryImages.map((img) => (
-              <figure key={img.filename} className="space-y-1.5">
-                <Photo
-                  src={api.abrasiveImageUrl(abrasive.id, img.filename)}
-                  alt={img.caption || abrasive.name}
-                  className="w-full overflow-hidden rounded-md bg-muted/40"
-                  imgClassName="h-auto"
-                  loadingMinHeight="10rem"
-                />
-                {img.caption && (
-                  <figcaption className="text-xs text-muted-foreground">{img.caption}</figcaption>
-                )}
-              </figure>
-            ))}
-          </div>
-        </section>
-      )}
+      <ImageGallery
+        images={abrasive.images}
+        imageUrl={(filename, size) =>
+          api.abrasiveImageUrl(abrasive.id, filename, size)
+        }
+        alt={abrasive.name}
+        onUpload={handleImageUpload}
+        onSaveImages={handleSaveImages}
+        onDelete={handleImageDelete}
+      />
 
       <section className="space-y-3">
         <h2 className="font-heading text-sm uppercase tracking-wider text-foreground/80">

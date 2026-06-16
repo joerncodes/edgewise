@@ -44,6 +44,11 @@ export async function PATCH(req: Request, { params }: Ctx) {
       if (!owner) return badRequest(`owner not found: ${merged.ownerId}`);
     }
 
+    // Image array is the gallery's persistence channel (see
+    // ui-image-upload.md). Schema defaults `images` to [], so we can't
+    // use `merged.images` as a presence signal — check the raw body.
+    const wantsImagesUpdate = "images" in (rawBody as Record<string, unknown>);
+
     // Decide the new backlog position. Rules (see backlog-manual-order.md):
     // - backlog false → no position
     // - explicit `backlogPosition: null` → clear
@@ -76,6 +81,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
       backlogPosition,
       onLoan: merged.onLoan ?? false,
       sessions: merged.sessions ?? [],
+      images: wantsImagesUpdate ? merged.images : existing.images,
       updatedAt: nowIso(),
     };
     await storage.saveKnife(updated);
