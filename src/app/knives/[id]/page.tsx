@@ -8,23 +8,44 @@ import {
   Grip,
   Handshake,
   Inbox,
+  Pencil,
   PocketKnife,
   Tags,
+  Trash2,
   User,
 } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { KnifeForm } from "@/components/knife-form";
 import { Photo } from "@/components/photo";
 import { Markdown } from "@/components/markdown";
 import { PropertyList, PropertyRow } from "@/components/property-row";
 import { Stars } from "@/components/stars";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api-client";
 import { slugify } from "@/lib/storage/ids";
 import { isStrop } from "@/lib/abrasives";
-import type { Abrasive, Knife, Owner } from "@/lib/storage/types";
+import type {
+  Abrasive,
+  Knife,
+  KnifeInput,
+  Owner,
+  SharpeningSession,
+} from "@/lib/storage/types";
 
 const dateFmt = new Intl.DateTimeFormat("de-DE", { dateStyle: "short" });
 
@@ -36,12 +57,17 @@ function formatDate(iso: string): string {
 
 export default function KnifeDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const [knife, setKnife] = useState<Knife | null>(null);
   const [owner, setOwner] = useState<Owner | null>(null);
   const [abrasives, setAbrasives] = useState<Abrasive[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
   const [togglingLoan, setTogglingLoan] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [allOwners, setAllOwners] = useState<Owner[]>([]);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
 
   const abrasiveById = useMemo(
     () => Object.fromEntries(abrasives.map((a) => [a.id, a])),
@@ -62,6 +88,54 @@ export default function KnifeDetailPage() {
       toast.error(err instanceof Error ? err.message : "Failed to update");
     } finally {
       setToggling(false);
+    }
+  }
+
+  async function enterEdit() {
+    if (allOwners.length === 0) {
+      try {
+        const list = await api.listOwners();
+        setAllOwners(list);
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : "Failed to load owners",
+        );
+        return;
+      }
+    }
+    setEditing(true);
+  }
+
+  async function handleSave(values: KnifeInput) {
+    if (!knife) return;
+    try {
+      const updated = await api.updateKnife(knife.id, values);
+      setKnife(updated);
+      if (updated.ownerId !== owner?.id) {
+        api
+          .getOwner(updated.ownerId)
+          .then(setOwner)
+          .catch(() => {
+            /* owner may have been deleted; just clear */
+          });
+      }
+      setEditing(false);
+      toast.success(`Saved ${updated.name}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save");
+    }
+  }
+
+  async function handleDelete() {
+    if (!knife || deleting) return;
+    setDeleting(true);
+    try {
+      await api.deleteKnife(knife.id);
+      toast.success(`Deleted ${knife.name}`);
+      router.push("/");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete");
+      setDeleting(false);
     }
   }
 
@@ -181,7 +255,7 @@ export default function KnifeDetailPage() {
             variant="outline"
             size="xs"
             onClick={toggleBacklog}
-            disabled={toggling}
+            disabled={toggling || editing}
           >
             <Inbox />
             {knife.backlog ? "Remove from backlog" : "Add to backlog"}
@@ -190,14 +264,97 @@ export default function KnifeDetailPage() {
             variant="outline"
             size="xs"
             onClick={toggleOnLoan}
-            disabled={togglingLoan}
+            disabled={togglingLoan || editing}
           >
             <Handshake />
             {knife.onLoan ? "Mark as returned" : "Mark as on loan"}
           </Button>
+          {!editing && (
+            <>
+              <Button variant="outline" size="xs" onClick={enterEdit}>
+                <Pencil />
+                Edit
+              </Button>
+              <AlertDialog
+                onOpenChange={(open) => {
+                  if (!open) setDeleteConfirm("");
+                }}
+              >
+                <AlertDialogTrigger
+                  render={
+                    <Button variant="destructive" size="xs">
+                      <Trash2 />
+                      Delete
+                    </Button>
+                  }
+                />
+                <DeleteKnifeDialog
+                  knife={knife}
+                  deleting={deleting}
+                  confirmValue={deleteConfirm}
+                  onConfirmChange={setDeleteConfirm}
+                  onDelete={handleDelete}
+                />
+              </AlertDialog>
+            </>
+          )}
         </div>
       </header>
 
+      {editing ? (
+        <section className="max-w-2xl">
+          <KnifeForm
+            owners={allOwners}
+            defaultValues={{
+              name: knife.name,
+              ownerId: knife.ownerId,
+              manufacturer: knife.manufacturer ?? "",
+              type: knife.type ?? "",
+              subtype: knife.subtype ?? "",
+              steel: knife.steel ?? "",
+              handle: knife.handle ?? "",
+              notes: knife.notes ?? "",
+              backlog: knife.backlog ?? false,
+              onLoan: knife.onLoan ?? false,
+              sessions: knife.sessions,
+            }}
+            submitLabel="Save changes"
+            onSubmit={handleSave}
+            onCancel={() => setEditing(false)}
+            pinnedSlug={knife.id}
+          />
+        </section>
+      ) : (
+        <DetailBody
+          knife={knife}
+          owner={owner}
+          last={last}
+          galleryImages={galleryImages}
+          sortedSessions={sortedSessions}
+          abrasiveById={abrasiveById}
+        />
+      )}
+    </div>
+  );
+}
+
+function DetailBody({
+  knife,
+  owner,
+  last,
+  galleryImages,
+  sortedSessions,
+  abrasiveById,
+}: {
+  knife: Knife;
+  owner: Owner | null;
+  last: SharpeningSession | undefined;
+  galleryImages: Knife["images"];
+  sortedSessions: SharpeningSession[];
+  abrasiveById: Record<string, Abrasive>;
+}) {
+  return (
+    <>
       <section>
         <PropertyList>
           {owner && (
@@ -343,7 +500,7 @@ export default function KnifeDetailPage() {
           <Markdown>{knife.notes}</Markdown>
         </section>
       )}
-    </div>
+    </>
   );
 }
 
@@ -393,5 +550,71 @@ function SessionAbrasives({
         );
       })}
     </div>
+  );
+}
+
+function DeleteKnifeDialog({
+  knife,
+  deleting,
+  confirmValue,
+  onConfirmChange,
+  onDelete,
+}: {
+  knife: Knife;
+  deleting: boolean;
+  confirmValue: string;
+  onConfirmChange: (v: string) => void;
+  onDelete: () => void;
+}) {
+  const sessions = knife.sessions.length;
+  const photos = knife.images.length;
+  // Typed confirmation is required when there's anything non-trivial
+  // attached. A stray Enter shouldn't blow away months of records.
+  const requiresTyped = sessions > 0 || photos > 0;
+  const canDelete = !requiresTyped || confirmValue.trim() === "delete";
+
+  const cascade: string[] = [];
+  if (sessions > 0) cascade.push(`${sessions} ${sessions === 1 ? "session" : "sessions"}`);
+  if (photos > 0) cascade.push(`${photos} ${photos === 1 ? "photo" : "photos"}`);
+
+  return (
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Delete {knife.name}?</AlertDialogTitle>
+        <AlertDialogDescription>
+          {cascade.length > 0
+            ? `Deletes the knife and its ${cascade.join(" + ")} on disk.`
+            : "Deletes the knife record."}{" "}
+          Cannot be undone.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      {requiresTyped && (
+        <div className="space-y-1.5">
+          <label
+            htmlFor="delete-confirm"
+            className="text-xs text-muted-foreground"
+          >
+            Type <code className="font-mono">delete</code> to confirm.
+          </label>
+          <Input
+            id="delete-confirm"
+            value={confirmValue}
+            onChange={(e) => onConfirmChange(e.target.value)}
+            placeholder="delete"
+            autoComplete="off"
+          />
+        </div>
+      )}
+      <AlertDialogFooter>
+        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogAction
+          variant="destructive"
+          onClick={onDelete}
+          disabled={deleting || !canDelete}
+        >
+          {deleting ? "Deleting…" : "Delete"}
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
   );
 }
