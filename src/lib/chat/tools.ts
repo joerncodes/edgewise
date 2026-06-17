@@ -1,4 +1,5 @@
 import { POST as createSessionRoute } from "@/app/api/knives/[id]/sessions/route";
+import { PATCH as patchSessionRoute } from "@/app/api/knives/[id]/sessions/[date]/route";
 import { getStorage } from "@/lib/storage";
 import type { Knife } from "@/lib/storage/types";
 
@@ -79,6 +80,42 @@ export const LOCAL_TOOLS: ToolDef[] = [
       required: ["date", "angle"],
     },
   },
+  {
+    name: "edit_session",
+    description:
+      "Edit an existing sharpening session on the knife in view. The user's edit request IS the consent — do not echo the new values back and ask 'good to go?'. ONLY include the fields you are changing; omit angle if angle isn't changing, omit abrasives if abrasives aren't changing. The date identifies which session to edit and is NOT mutable — to move a session to a different date, delete and re-log. Pass null (not omitted) to notes / rating / abrasives to CLEAR that field. If you are setting abrasives, call list_abrasives first in the same turn to resolve names to real ids — never invent slugs. A 404 means the session was deleted on the detail page since the system prompt was built; call get_knife to refresh, do not retry blind.",
+    input_schema: {
+      type: "object",
+      properties: {
+        date: {
+          type: "string",
+          description:
+            "ISO date YYYY-MM-DD of the session to edit. Picked from the session history in the system prompt. Cannot be changed.",
+        },
+        angle: {
+          type: "number",
+          description: "New per-side angle. Omit to leave unchanged.",
+        },
+        abrasives: {
+          type: ["array", "null"],
+          items: { type: "string" },
+          description:
+            "Replacement abrasive chain (ids from list_abrasives, coarse → fine). null clears the chain. Omit to leave unchanged.",
+        },
+        notes: {
+          type: ["string", "null"],
+          description:
+            "Replacement notes. null clears. Omit to leave unchanged.",
+        },
+        rating: {
+          type: ["number", "null"],
+          description:
+            "Replacement rating 1–5. null clears. Omit to leave unchanged.",
+        },
+      },
+      required: ["date"],
+    },
+  },
 ];
 
 function knifeSummary(k: Knife) {
@@ -147,6 +184,56 @@ export async function runTool(
         return JSON.stringify({ error: `abrasive not found: ${id}` });
       }
       return JSON.stringify(abrasive);
+    }
+    case "edit_session": {
+      // Mirrors log_session: route through the PATCH handler
+      // in-process, knife id bound from ctx. The PATCH schema is
+      // .strict(), so we only forward known keys — and only those
+      // the model actually set, so omitted fields stay untouched.
+      const date = typeof input.date === "string" ? input.date : "";
+      if (!date) return JSON.stringify({ error: "date is required" });
+
+      const body: Record<string, unknown> = {};
+      if (typeof input.angle === "number") body.angle = input.angle;
+      // null is meaningful (clear). undefined means "not in payload".
+      if ("notes" in input) body.notes = input.notes;
+      if ("rating" in input) body.rating = input.rating;
+      if ("abrasives" in input) body.abrasives = input.abrasives;
+
+      if (Object.keys(body).length === 0) {
+        return JSON.stringify({
+          error:
+            "no changes specified — include at least one of angle/notes/rating/abrasives",
+        });
+      }
+
+      const fakeReq = new Request(
+        `http://internal/api/knives/${encodeURIComponent(ctx.knifeId)}/sessions/${encodeURIComponent(date)}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        },
+      );
+      const res = await patchSessionRoute(fakeReq, {
+        params: Promise.resolve({ id: ctx.knifeId, date }),
+      });
+      const payload = (await res.json().catch(() => null)) as unknown;
+      if (!res.ok) {
+        return JSON.stringify({
+          error:
+            payload && typeof payload === "object" && "error" in payload
+              ? (payload as { error: string }).error
+              : `request failed (${res.status})`,
+          status: res.status,
+        });
+      }
+      const knife = (payload as { knife: Knife } | null)?.knife;
+      const edited = knife?.sessions.find((s) => s.date === date);
+      return JSON.stringify({
+        ok: true,
+        session: edited ?? { date },
+      });
     }
     case "log_session": {
       // Route through the existing API rather than touching storage —

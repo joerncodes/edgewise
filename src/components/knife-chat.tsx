@@ -7,6 +7,7 @@ import {
   Loader2,
   MessageCircle,
   NotebookPen,
+  Pencil,
   PocketKnife,
   Send,
   Wrench,
@@ -66,7 +67,13 @@ const TOOL_LABELS: Record<string, { label: string; Icon: typeof Globe }> = {
   list_abrasives: { label: "Listing abrasives", Icon: Gem },
   get_abrasive: { label: "Loading abrasive", Icon: Gem },
   log_session: { label: "Logging session", Icon: NotebookPen },
+  edit_session: { label: "Editing session", Icon: Pencil },
 };
+
+// Tools that mutate data — the detail view behind the chat dialog
+// needs a router.refresh() when any of them succeed so the new state
+// is visible after the dialog closes.
+const WRITE_TOOLS = new Set(["log_session", "edit_session"]);
 
 export function KnifeChat({ knifeId, knifeName }: KnifeChatProps) {
   const router = useRouter();
@@ -141,12 +148,12 @@ export function KnifeChat({ knifeId, knifeName }: KnifeChatProps) {
           }
           applyEvent(event);
           // Side effect: refresh the page when a write tool succeeds
-          // so the new session shows up in the detail view without a
-          // manual reload.
+          // so the change shows up in the detail view without a manual
+          // reload.
           if (
             event.type === "tool_end" &&
             event.ok &&
-            event.name === "log_session"
+            WRITE_TOOLS.has(event.name)
           ) {
             router.refresh();
           }
