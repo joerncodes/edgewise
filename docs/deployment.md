@@ -34,6 +34,12 @@ The container needs three secrets:
 | `API_TOKEN`     | Bearer token for the API (Claude, scripts, curl). |
 | `AUTH_SECRET`   | Auth.js JWT signing secret. `openssl rand -base64 32`. |
 
+Optional:
+
+| env                 | what                                                  |
+|---------------------|-------------------------------------------------------|
+| `ANTHROPIC_API_KEY` | Enables the "Chat about this knife" panel. If unset, the chat endpoint returns 503 and the UI hides the panel. See `docs/todos/chat-about-knife.md`. |
+
 And one volume:
 
 | path     | what                                              |

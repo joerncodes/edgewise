@@ -20,6 +20,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ImageGallery } from "@/components/image-gallery";
+import { KnifeChat } from "@/components/knife-chat";
 import { KnifeForm } from "@/components/knife-form";
 import { Photo } from "@/components/photo";
 import { SessionForm } from "@/components/session-form";
@@ -320,6 +321,7 @@ export default function KnifeDetailPage() {
           </Button>
           {!editing && (
             <>
+              <KnifeChat knifeId={knife.id} knifeName={knife.name} />
               <Button variant="outline" size="xs" onClick={enterEdit}>
                 <Pencil />
                 Edit
