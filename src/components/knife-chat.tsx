@@ -10,9 +10,9 @@ import {
   Pencil,
   PocketKnife,
   Send,
+  StickyNote,
   Wrench,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,11 @@ interface ChatMessage {
 interface KnifeChatProps {
   knifeId: string;
   knifeName: string;
+  // Fired after every successful write tool so the host page can
+  // re-fetch the knife. router.refresh() is useless here — the
+  // detail page holds the knife in client state, so the parent has
+  // to refetch itself.
+  onWrite?: () => void;
 }
 
 type StreamEvent =
@@ -68,15 +73,19 @@ const TOOL_LABELS: Record<string, { label: string; Icon: typeof Globe }> = {
   get_abrasive: { label: "Loading abrasive", Icon: Gem },
   log_session: { label: "Logging session", Icon: NotebookPen },
   edit_session: { label: "Editing session", Icon: Pencil },
+  append_knife_note: { label: "Adding to notes", Icon: StickyNote },
 };
 
 // Tools that mutate data — the detail view behind the chat dialog
 // needs a router.refresh() when any of them succeed so the new state
 // is visible after the dialog closes.
-const WRITE_TOOLS = new Set(["log_session", "edit_session"]);
+const WRITE_TOOLS = new Set([
+  "log_session",
+  "edit_session",
+  "append_knife_note",
+]);
 
-export function KnifeChat({ knifeId, knifeName }: KnifeChatProps) {
-  const router = useRouter();
+export function KnifeChat({ knifeId, knifeName, onWrite }: KnifeChatProps) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -147,15 +156,15 @@ export function KnifeChat({ knifeId, knifeName }: KnifeChatProps) {
             continue;
           }
           applyEvent(event);
-          // Side effect: refresh the page when a write tool succeeds
-          // so the change shows up in the detail view without a manual
-          // reload.
+          // Side effect: tell the host page to refetch the knife when
+          // a write tool succeeds, so the change shows up in the
+          // detail view without closing the chat.
           if (
             event.type === "tool_end" &&
             event.ok &&
             WRITE_TOOLS.has(event.name)
           ) {
-            router.refresh();
+            onWrite?.();
           }
         }
       }

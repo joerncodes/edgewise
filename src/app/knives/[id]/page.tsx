@@ -233,6 +233,19 @@ export default function KnifeDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  // Re-pull the knife after a chat write tool succeeds. Chat tools
+  // mutate via the API, but this page holds the knife in client
+  // state — router.refresh() doesn't reach it, so the parent has
+  // to refetch.
+  async function refetchKnife() {
+    try {
+      const k = await api.getKnife(id);
+      setKnife(k);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to reload");
+    }
+  }
+
   if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
   if (!knife) return <p className="text-sm text-muted-foreground">Not found.</p>;
 
@@ -321,7 +334,11 @@ export default function KnifeDetailPage() {
           </Button>
           {!editing && (
             <>
-              <KnifeChat knifeId={knife.id} knifeName={knife.name} />
+              <KnifeChat
+                knifeId={knife.id}
+                knifeName={knife.name}
+                onWrite={refetchKnife}
+              />
               <Button variant="outline" size="xs" onClick={enterEdit}>
                 <Pencil />
                 Edit

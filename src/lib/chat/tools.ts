@@ -1,3 +1,4 @@
+import { PATCH as patchKnifeRoute } from "@/app/api/knives/[id]/route";
 import { POST as createSessionRoute } from "@/app/api/knives/[id]/sessions/route";
 import { PATCH as patchSessionRoute } from "@/app/api/knives/[id]/sessions/[date]/route";
 import { getStorage } from "@/lib/storage";
@@ -78,6 +79,22 @@ export const LOCAL_TOOLS: ToolDef[] = [
         },
       },
       required: ["date", "angle"],
+    },
+  },
+  {
+    name: "append_knife_note",
+    description:
+      "Append a short note to the knife's notes field. Use when the user makes an observation about the knife mid-chat ('the convex didn't take the 1k well', 'handle scales loosened again'). The user's request to add IS the consent — do not echo the note back and ask 'good to go?'. This tool is APPEND-ONLY: it never rewrites or deletes existing notes. If the user asks to rewrite or delete the notes, tell them to use the detail page's inline edit instead. Pass the user's wording verbatim when they quote a specific sentence; otherwise paraphrase their observation into one short sentence matching the existing notes' tone. Do not add a date prefix unless the user asked for one.",
+    input_schema: {
+      type: "object",
+      properties: {
+        note: {
+          type: "string",
+          description:
+            "The note text to append. One sentence is typical. Must not be empty.",
+        },
+      },
+      required: ["note"],
     },
   },
   {
@@ -184,6 +201,49 @@ export async function runTool(
         return JSON.stringify({ error: `abrasive not found: ${id}` });
       }
       return JSON.stringify(abrasive);
+    }
+    case "append_knife_note": {
+      // Append-only by design: read current notes, glue the new note
+      // on with a paragraph break, PATCH the whole notes field. The
+      // tool can never lose existing content. Knife id from ctx.
+      const note =
+        typeof input.note === "string" ? input.note.trim() : "";
+      if (!note) {
+        return JSON.stringify({
+          error:
+            "note must not be empty — call again with content, or tell the user you have nothing to add",
+        });
+      }
+
+      const knife = await storage.getKnife(ctx.knifeId);
+      if (!knife) {
+        return JSON.stringify({ error: "knife not found" });
+      }
+      const existing = (knife.notes ?? "").trimEnd();
+      const next = existing ? `${existing}\n\n${note}` : note;
+
+      const fakeReq = new Request(
+        `http://internal/api/knives/${encodeURIComponent(ctx.knifeId)}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ notes: next }),
+        },
+      );
+      const res = await patchKnifeRoute(fakeReq, {
+        params: Promise.resolve({ id: ctx.knifeId }),
+      });
+      const payload = (await res.json().catch(() => null)) as unknown;
+      if (!res.ok) {
+        return JSON.stringify({
+          error:
+            payload && typeof payload === "object" && "error" in payload
+              ? (payload as { error: string }).error
+              : `request failed (${res.status})`,
+          status: res.status,
+        });
+      }
+      return JSON.stringify({ ok: true, appended: note });
     }
     case "edit_session": {
       // Mirrors log_session: route through the PATCH handler
