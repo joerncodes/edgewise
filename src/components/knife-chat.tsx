@@ -6,10 +6,12 @@ import {
   Globe,
   Loader2,
   MessageCircle,
+  NotebookPen,
   PocketKnife,
   Send,
   Wrench,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
@@ -52,7 +54,7 @@ interface KnifeChatProps {
 type StreamEvent =
   | { type: "text"; text: string }
   | { type: "tool_start"; id: string; name: string; serverSide?: boolean }
-  | { type: "tool_end"; id: string; ok: boolean }
+  | { type: "tool_end"; id: string; name: string; ok: boolean }
   | { type: "citation"; url: string; title?: string }
   | { type: "done"; usage?: { input: number; output: number } }
   | { type: "error"; message: string };
@@ -63,9 +65,11 @@ const TOOL_LABELS: Record<string, { label: string; Icon: typeof Globe }> = {
   get_knife: { label: "Loading knife", Icon: PocketKnife },
   list_abrasives: { label: "Listing abrasives", Icon: Gem },
   get_abrasive: { label: "Loading abrasive", Icon: Gem },
+  log_session: { label: "Logging session", Icon: NotebookPen },
 };
 
 export function KnifeChat({ knifeId, knifeName }: KnifeChatProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -136,6 +140,16 @@ export function KnifeChat({ knifeId, knifeName }: KnifeChatProps) {
             continue;
           }
           applyEvent(event);
+          // Side effect: refresh the page when a write tool succeeds
+          // so the new session shows up in the detail view without a
+          // manual reload.
+          if (
+            event.type === "tool_end" &&
+            event.ok &&
+            event.name === "log_session"
+          ) {
+            router.refresh();
+          }
         }
       }
     } catch (err) {

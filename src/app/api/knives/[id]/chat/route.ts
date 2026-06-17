@@ -30,7 +30,7 @@ type Ctx = { params: Promise<{ id: string }> };
 type StreamEvent =
   | { type: "text"; text: string }
   | { type: "tool_start"; id: string; name: string; serverSide?: boolean }
-  | { type: "tool_end"; id: string; ok: boolean }
+  | { type: "tool_end"; id: string; name: string; ok: boolean }
   | { type: "citation"; url: string; title?: string }
   | { type: "done"; usage?: { input: number; output: number } }
   | { type: "error"; message: string };
@@ -190,9 +190,16 @@ export async function POST(req: Request, { params }: Ctx) {
           const toolResults: ToolResultBlockParam[] = [];
           for (const block of toolUseBlocks) {
             try {
-              const result = await runTool(block.name, block.input);
+              const result = await runTool(block.name, block.input, {
+                knifeId: id,
+              });
               controller.enqueue(
-                encode({ type: "tool_end", id: block.id, ok: true }),
+                encode({
+                  type: "tool_end",
+                  id: block.id,
+                  name: block.name,
+                  ok: true,
+                }),
               );
               toolResults.push({
                 type: "tool_result",
@@ -201,7 +208,12 @@ export async function POST(req: Request, { params }: Ctx) {
               });
             } catch (err) {
               controller.enqueue(
-                encode({ type: "tool_end", id: block.id, ok: false }),
+                encode({
+                  type: "tool_end",
+                  id: block.id,
+                  name: block.name,
+                  ok: false,
+                }),
               );
               toolResults.push({
                 type: "tool_result",
