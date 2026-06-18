@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 // Mirrors the server's StreamEvent (src/lib/chat/agent-stream.ts). Kept
 // local so this client component doesn't pull the server module.
@@ -64,6 +65,7 @@ export function KnifeScanDialog({ onProposal }: KnifeScanDialogProps) {
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [sourceUrl, setSourceUrl] = useState("");
+  const [instructions, setInstructions] = useState("");
   const [scanning, setScanning] = useState(false);
   const [text, setText] = useState("");
   const [toolCalls, setToolCalls] = useState<ToolCall[]>([]);
@@ -76,6 +78,7 @@ export function KnifeScanDialog({ onProposal }: KnifeScanDialogProps) {
   function reset() {
     setFile(null);
     setSourceUrl("");
+    setInstructions("");
     setText("");
     setToolCalls([]);
     setError(null);
@@ -131,6 +134,7 @@ export function KnifeScanDialog({ onProposal }: KnifeScanDialogProps) {
       const fd = new FormData();
       fd.append("file", scannedFile);
       if (sourceUrl.trim()) fd.append("sourceUrl", sourceUrl.trim());
+      if (instructions.trim()) fd.append("instructions", instructions.trim());
 
       const res = await fetch("/api/knives/scan", {
         method: "POST",
@@ -230,6 +234,18 @@ export function KnifeScanDialog({ onProposal }: KnifeScanDialogProps) {
               value={sourceUrl}
               disabled={scanning}
               onChange={(e) => setSourceUrl(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="scan-instructions">Instructions (optional)</Label>
+            <Textarea
+              id="scan-instructions"
+              rows={2}
+              className="resize-none"
+              placeholder="Anything Claude should know — the maker if you can read it, who it's for, what to focus on."
+              value={instructions}
+              disabled={scanning}
+              onChange={(e) => setInstructions(e.target.value)}
             />
           </div>
 

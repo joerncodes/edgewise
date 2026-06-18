@@ -64,12 +64,14 @@ clearing `backlog` (manually or via a session) clears the position too.
 
 | Method | Path                | Body                          | Returns                  |
 |--------|---------------------|-------------------------------|--------------------------|
-| POST   | `/api/knives/scan`  | multipart (`file`, `sourceUrl?`) | NDJSON event stream   |
+| POST   | `/api/knives/scan`  | multipart (`file`, `sourceUrl?`, `instructions?`) | NDJSON event stream |
 
 Unlike the rest of the API this is **not** JSON-in/JSON-out: it runs a
 short vision + tool-use agent and streams progress. `file` is the knife
 photo (JPEG/PNG/WebP, ≤10 MB); `sourceUrl` is an optional http(s)
-product page the agent may fetch. The response is
+product page the agent may fetch; `instructions` is optional free text
+(≤2000 chars) handed to the agent as hints for this photo (the maker,
+who it's for, what to focus on). The response is
 `application/x-ndjson` — one JSON event per line:
 
 - `{"type":"text","text":…}` — streamed reasoning

@@ -15,6 +15,19 @@ const MODEL = "claude-sonnet-4-6";
 const MAX_TOKENS = 2048;
 const WEB_SEARCH_MAX_USES = 5;
 const MAX_TOOL_ROUNDS = 8;
+// User-supplied hints ride in the first user turn. Cap the length so a
+// pasted essay can't blow up the prompt.
+const MAX_INSTRUCTIONS_CHARS = 2000;
+
+const BASE_USER_TEXT =
+  "Here is a photo of a knife I want to add to my log. Identify what you can and call propose_knife with the suggested record.";
+
+function instructionsFrom(raw: FormDataEntryValue | null): string | null {
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  return trimmed.slice(0, MAX_INSTRUCTIONS_CHARS);
+}
 
 function normalizeSourceUrl(raw: FormDataEntryValue | null): string | null {
   if (typeof raw !== "string") return null;
@@ -62,9 +75,14 @@ export async function POST(req: Request) {
   const bytes = Buffer.from(await file.arrayBuffer());
   const base64 = bytes.toString("base64");
   const sourceUrl = normalizeSourceUrl(form.get("sourceUrl"));
+  const instructions = instructionsFrom(form.get("instructions"));
 
   const systemPrompt = buildKnifeScanSystemPrompt({ sourceUrl });
   const client = new Anthropic({ apiKey });
+
+  const userText = instructions
+    ? `${BASE_USER_TEXT}\n\nThings I know about this knife (treat as hints, not gospel — the photo still wins where they conflict):\n${instructions}`
+    : BASE_USER_TEXT;
 
   const messages: MessageParam[] = [
     {
@@ -78,10 +96,7 @@ export async function POST(req: Request) {
             data: base64,
           },
         },
-        {
-          type: "text",
-          text: "Here is a photo of a knife I want to add to my log. Identify what you can and call propose_knife with the suggested record.",
-        },
+        { type: "text", text: userText },
       ],
     },
   ];
