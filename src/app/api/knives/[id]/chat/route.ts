@@ -1,15 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type {
-  ContentBlockParam,
-  MessageParam,
-  ToolResultBlockParam,
-  ToolUseBlock,
-} from "@anthropic-ai/sdk/resources/messages";
+import type { MessageParam } from "@anthropic-ai/sdk/resources/messages";
 import { z } from "zod";
 import { getStorage } from "@/lib/storage";
 import { badRequest, fromZod, notFound, serverError } from "@/lib/http";
 import { buildKnifeChatSystemPrompt } from "@/lib/chat/system-prompt";
 import { LOCAL_TOOLS, runTool } from "@/lib/chat/tools";
+import { encode, runAgentStream } from "@/lib/chat/agent-stream";
 
 const MODEL = "claude-sonnet-4-6";
 const MAX_TOKENS = 1024;
@@ -26,18 +22,6 @@ const BodySchema = z.object({
 });
 
 type Ctx = { params: Promise<{ id: string }> };
-
-type StreamEvent =
-  | { type: "text"; text: string }
-  | { type: "tool_start"; id: string; name: string; serverSide?: boolean }
-  | { type: "tool_end"; id: string; name: string; ok: boolean }
-  | { type: "citation"; url: string; title?: string }
-  | { type: "done"; usage?: { input: number; output: number } }
-  | { type: "error"; message: string };
-
-function encode(event: StreamEvent): Uint8Array {
-  return new TextEncoder().encode(`${JSON.stringify(event)}\n`);
-}
 
 export async function POST(req: Request, { params }: Ctx) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -81,163 +65,35 @@ export async function POST(req: Request, { params }: Ctx) {
     content: m.content,
   }));
 
+  const tools = [
+    {
+      type: "web_search_20250305" as const,
+      name: "web_search" as const,
+      max_uses: WEB_SEARCH_MAX_USES,
+    },
+    ...LOCAL_TOOLS,
+  ];
+
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const seenCitations = new Set<string>();
-      let totalInput = 0;
-      let totalOutput = 0;
-
       try {
-        for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-          const tools = [
+        await runAgentStream({
+          client,
+          model: MODEL,
+          maxTokens: MAX_TOKENS,
+          maxRounds: MAX_TOOL_ROUNDS,
+          system: [
             {
-              type: "web_search_20250305" as const,
-              name: "web_search" as const,
-              max_uses: WEB_SEARCH_MAX_USES,
+              type: "text",
+              text: systemPrompt,
+              cache_control: { type: "ephemeral" },
             },
-            ...LOCAL_TOOLS,
-          ];
-          if (round === 0) {
-            console.log(
-              `[chat] round 0 → ${tools.length} tools:`,
-              tools.map((t) => t.name).join(", "),
-            );
-          }
-          const events = client.messages.stream({
-            model: MODEL,
-            max_tokens: MAX_TOKENS,
-            system: [
-              {
-                type: "text",
-                text: systemPrompt,
-                cache_control: { type: "ephemeral" },
-              },
-            ],
-            messages,
-            tools,
-          });
-
-          for await (const event of events) {
-            if (event.type === "content_block_start") {
-              const block = event.content_block;
-              if (block.type === "server_tool_use") {
-                controller.enqueue(
-                  encode({
-                    type: "tool_start",
-                    id: block.id,
-                    name: block.name,
-                    serverSide: true,
-                  }),
-                );
-              } else if (block.type === "tool_use") {
-                controller.enqueue(
-                  encode({
-                    type: "tool_start",
-                    id: block.id,
-                    name: block.name,
-                  }),
-                );
-              }
-            } else if (event.type === "content_block_delta") {
-              const delta = event.delta;
-              if (delta.type === "text_delta") {
-                controller.enqueue(encode({ type: "text", text: delta.text }));
-              } else if (delta.type === "citations_delta") {
-                const c = delta.citation as { url?: string; title?: string };
-                const url = c?.url;
-                if (url && !seenCitations.has(url)) {
-                  seenCitations.add(url);
-                  controller.enqueue(
-                    encode({ type: "citation", url, title: c.title }),
-                  );
-                }
-              }
-            }
-          }
-
-          const final = await events.finalMessage();
-          if (final.usage) {
-            totalInput += final.usage.input_tokens ?? 0;
-            totalOutput += final.usage.output_tokens ?? 0;
-          }
-
-          if (final.stop_reason !== "tool_use") {
-            controller.enqueue(
-              encode({
-                type: "done",
-                usage: { input: totalInput, output: totalOutput },
-              }),
-            );
-            return;
-          }
-
-          // Execute local tools and feed results back. Server-side tools
-          // (web_search) are already resolved by the API in the same turn,
-          // so we just need to handle plain tool_use blocks.
-          const toolUseBlocks = final.content.filter(
-            (b): b is ToolUseBlock => b.type === "tool_use",
-          );
-          if (toolUseBlocks.length === 0) {
-            controller.enqueue(
-              encode({
-                type: "done",
-                usage: { input: totalInput, output: totalOutput },
-              }),
-            );
-            return;
-          }
-
-          const toolResults: ToolResultBlockParam[] = [];
-          for (const block of toolUseBlocks) {
-            try {
-              const result = await runTool(block.name, block.input, {
-                knifeId: id,
-              });
-              controller.enqueue(
-                encode({
-                  type: "tool_end",
-                  id: block.id,
-                  name: block.name,
-                  ok: true,
-                }),
-              );
-              toolResults.push({
-                type: "tool_result",
-                tool_use_id: block.id,
-                content: result,
-              });
-            } catch (err) {
-              controller.enqueue(
-                encode({
-                  type: "tool_end",
-                  id: block.id,
-                  name: block.name,
-                  ok: false,
-                }),
-              );
-              toolResults.push({
-                type: "tool_result",
-                tool_use_id: block.id,
-                content:
-                  err instanceof Error ? err.message : "tool execution failed",
-                is_error: true,
-              });
-            }
-          }
-
-          messages.push({
-            role: "assistant",
-            content: final.content as ContentBlockParam[],
-          });
-          messages.push({ role: "user", content: toolResults });
-        }
-
-        controller.enqueue(
-          encode({
-            type: "error",
-            message: `tool-use loop exceeded ${MAX_TOOL_ROUNDS} rounds`,
-          }),
-        );
+          ],
+          messages,
+          tools,
+          controller,
+          runTool: (name, input) => runTool(name, input, { knifeId: id }),
+        });
       } catch (err) {
         console.error("[chat]", err);
         const message =

@@ -1,9 +1,21 @@
 ---
 filetype: todo
-status: open
+status: done
 ---
 
 # Vision-LLM "scan a knife" pre-fill
+
+> **Shipped.** Landed as the agentic reframe below: facet tools
+> (`list_steels` / `list_handles` / `list_manufacturers`) in the shared
+> `LOCAL_TOOLS`; a shared `runAgentStream` extracted from the chat route;
+> `POST /api/knives/scan` running a vision + tool-use loop that
+> canonicalizes against the user's data, optionally `fetch_url`s a source
+> page and `web_search`es, and closes with a forced `propose_knife`
+> structured output; and a "Scan from photo" dialog on `/knives/new` that
+> streams progress and pre-fills the form (photo doubles as the cover).
+> Per-field confidence is "present vs omitted" — the model leaves
+> unreadable fields blank rather than guessing. Verified end-to-end
+> against a real photo. See `docs/api.md` → "Scan a knife from a photo".
 
 Adding a knife today is: take a photo, look up the model online,
 copy steel/manufacturer/handle/type into a curl call, upload the

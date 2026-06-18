@@ -60,6 +60,33 @@ or clear the manual queue position. `null` clears it explicitly. Flagging
 a knife into the backlog without a position auto-appends it (max + 1);
 clearing `backlog` (manually or via a session) clears the position too.
 
+### Scan a knife from a photo (vision)
+
+| Method | Path                | Body                          | Returns                  |
+|--------|---------------------|-------------------------------|--------------------------|
+| POST   | `/api/knives/scan`  | multipart (`file`, `sourceUrl?`, `instructions?`) | NDJSON event stream |
+
+Unlike the rest of the API this is **not** JSON-in/JSON-out: it runs a
+short vision + tool-use agent and streams progress. `file` is the knife
+photo (JPEG/PNG/WebP, ≤10 MB); `sourceUrl` is an optional http(s)
+product page the agent may fetch; `instructions` is optional free text
+(≤2000 chars) handed to the agent as hints for this photo (the maker,
+who it's for, what to focus on). The response is
+`application/x-ndjson` — one JSON event per line:
+
+- `{"type":"text","text":…}` — streamed reasoning
+- `{"type":"tool_start"|"tool_end", …}` — a tool call (web_search,
+  fetch_url, list_steels/handles/manufacturers/owners, propose_knife)
+- `{"type":"citation","url":…}` — a web source
+- `{"type":"proposal","suggestion":{…}}` — the suggested knife fields
+  (a subset of `KnifeInput`; only fields the model is confident about)
+- `{"type":"done"}` / `{"type":"error","message":…}`
+
+The scan creates nothing — the `proposal` pre-fills the new-knife form;
+the user reviews and saves via `POST /api/knives`. Returns `503` when
+`ANTHROPIC_API_KEY` is unset (the UI hides the scan button), the same as
+the per-knife chat endpoint.
+
 ### Backlog
 
 | Method | Path                      | Body              | Returns           |

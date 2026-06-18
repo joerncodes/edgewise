@@ -2,6 +2,7 @@ import { PATCH as patchKnifeRoute } from "@/app/api/knives/[id]/route";
 import { POST as createSessionRoute } from "@/app/api/knives/[id]/sessions/route";
 import { PATCH as patchSessionRoute } from "@/app/api/knives/[id]/sessions/[date]/route";
 import { getStorage } from "@/lib/storage";
+import { computeFacets } from "@/lib/facets";
 import type { Knife } from "@/lib/storage/types";
 
 export interface ToolDef {
@@ -50,6 +51,24 @@ export const LOCAL_TOOLS: ToolDef[] = [
       },
       required: ["id"],
     },
+  },
+  {
+    name: "list_steels",
+    description:
+      "List every steel in the user's registered steel library — id, name, composition, and notes. Use this to map a steel you read off a blade (a stamped grade like '1.4116' or 'VG-10', or a marketing name) to the canonical name the user already uses, and to pull composition for a notes paragraph. Prefer an existing library name over inventing a new spelling.",
+    input_schema: { type: "object", properties: {} },
+  },
+  {
+    name: "list_handles",
+    description:
+      "List every handle material in the user's registered handle library — id, name, and notes. Use this to map a handle material you identify (e.g. 'pakkawood', 'micarta', 'stabilized maple') to the canonical name the user already uses instead of introducing a near-duplicate.",
+    input_schema: { type: "object", properties: {} },
+  },
+  {
+    name: "list_manufacturers",
+    description:
+      "List the distinct manufacturer names already used across the user's knives, with a count per name. These are observed free-text values, not a registry. Use this to reuse the exact spelling the user already has (e.g. match 'Wüsthof' rather than writing 'Wusthof') so the facet doesn't gain a duplicate.",
+    input_schema: { type: "object", properties: {} },
   },
   {
     name: "log_session",
@@ -201,6 +220,34 @@ export async function runTool(
         return JSON.stringify({ error: `abrasive not found: ${id}` });
       }
       return JSON.stringify(abrasive);
+    }
+    case "list_steels": {
+      const steels = await storage.listSteels();
+      return JSON.stringify(
+        steels.map((s) => ({
+          id: s.id,
+          name: s.name,
+          composition: s.composition || null,
+          notes: s.notes || null,
+        })),
+      );
+    }
+    case "list_handles": {
+      const handles = await storage.listHandles();
+      return JSON.stringify(
+        handles.map((h) => ({
+          id: h.id,
+          name: h.name,
+          notes: h.notes || null,
+        })),
+      );
+    }
+    case "list_manufacturers": {
+      // Distinct manufacturer values observed across knives, with counts —
+      // a free-text facet, not a registry. Reuse computeFacets so the
+      // tool and the UI filter agree on what "the manufacturers" are.
+      const knives = await storage.listKnives();
+      return JSON.stringify(computeFacets(knives).manufacturers);
     }
     case "append_knife_note": {
       // Append-only by design: read current notes, glue the new note
