@@ -125,9 +125,19 @@ export async function POST(req: Request) {
         console.error("[scan]", err);
         const message =
           err instanceof Error ? err.message : "scan stream failed";
-        controller.enqueue(encode({ type: "error", message }));
+        // The client may have disconnected (closing the controller),
+        // which is what threw in the first place — don't double-fault.
+        try {
+          controller.enqueue(encode({ type: "error", message }));
+        } catch {
+          /* controller already closed */
+        }
       } finally {
-        controller.close();
+        try {
+          controller.close();
+        } catch {
+          /* already closed */
+        }
       }
     },
   });

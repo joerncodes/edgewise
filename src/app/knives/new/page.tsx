@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { KnifeForm } from "@/components/knife-form";
+import { KnifeScanDialog } from "@/components/knife-scan-dialog";
 import { api } from "@/lib/api-client";
 import type { KnifeInput, Owner } from "@/lib/storage/types";
 
@@ -16,6 +17,25 @@ export default function NewKnifePage() {
 
   const [owners, setOwners] = useState<Owner[]>([]);
   const [loading, setLoading] = useState(true);
+  // A scan pre-fills these. `formKey` bumps so the form remounts and
+  // picks up the new defaults (KnifeForm reads defaultValues/defaultFile
+  // only at mount).
+  const [scanDefaults, setScanDefaults] = useState<Partial<KnifeInput> | null>(
+    null,
+  );
+  const [scannedFile, setScannedFile] = useState<File | null>(null);
+  const [formKey, setFormKey] = useState(0);
+
+  function handleProposal(
+    suggestion: Record<string, string>,
+    file: File,
+  ) {
+    // Suggestion's ownerId (rare) wins; otherwise keep the ?ownerId query.
+    setScanDefaults({ ...(ownerId ? { ownerId } : {}), ...suggestion });
+    setScannedFile(file);
+    setFormKey((k) => k + 1);
+    toast.success("Scan complete — review and save.");
+  }
 
   useEffect(() => {
     api
@@ -60,10 +80,15 @@ export default function NewKnifePage() {
           <PocketKnife className="h-3 w-3" />
           All knives
         </Link>
-        <h1 className="flex items-center gap-3 text-3xl font-semibold tracking-tight text-brass">
-          <PocketKnife className="h-7 w-7" />
-          New knife
-        </h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="flex items-center gap-3 text-3xl font-semibold tracking-tight text-brass">
+            <PocketKnife className="h-7 w-7" />
+            New knife
+          </h1>
+          {!loading && owners.length > 0 && (
+            <KnifeScanDialog onProposal={handleProposal} />
+          )}
+        </div>
       </header>
 
       {loading ? (
@@ -84,8 +109,12 @@ export default function NewKnifePage() {
         </div>
       ) : (
         <KnifeForm
+          key={formKey}
           owners={owners}
-          defaultValues={ownerId ? { ownerId } : undefined}
+          defaultValues={
+            scanDefaults ?? (ownerId ? { ownerId } : undefined)
+          }
+          defaultFile={scannedFile}
           submitLabel="Create knife"
           onSubmit={handleSubmit}
           onCancel={() => router.push(ownerId ? `/owners/${ownerId}` : "/")}

@@ -51,6 +51,9 @@ export interface KnifeFormProps {
   // Show the cover-image upload field (create flow); the gallery
   // management UI lives in [[ui-image-upload]] and isn't here.
   showImageField?: boolean;
+  // Pre-seed the cover photo — the scan flow passes the photo the user
+  // scanned so it doubles as the knife's image without re-picking.
+  defaultFile?: File | null;
 }
 
 export function KnifeForm({
@@ -61,6 +64,7 @@ export function KnifeForm({
   onCancel,
   pinnedSlug,
   showImageField = false,
+  defaultFile = null,
 }: KnifeFormProps) {
   const form = useForm<KnifeFormValues, unknown, KnifeInput>({
     // Schema's input/output diverge through .default("") — same cast
@@ -84,7 +88,7 @@ export function KnifeForm({
   });
 
   const [facets, setFacets] = useState<Facets | null>(null);
-  const [file, setFile] = useState<File | null>(null);
+  const [file, setFile] = useState<File | null>(defaultFile);
 
   useEffect(() => {
     api.getFacets().then(setFacets).catch(() => {
@@ -364,8 +368,9 @@ export function KnifeForm({
               />
             </FormControl>
             <FormDescription>
-              JPEG / PNG / WebP, up to 10 MB. The full gallery flow
-              lives on the detail page.
+              {file
+                ? `Using ${file.name} — pick another to replace it.`
+                : "JPEG / PNG / WebP, up to 10 MB. The full gallery flow lives on the detail page."}
             </FormDescription>
           </FormItem>
         )}
