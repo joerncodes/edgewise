@@ -11,7 +11,7 @@ import {
   Users,
   Wrench,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -72,6 +72,15 @@ export function KnifeScanDialog({ onProposal }: KnifeScanDialogProps) {
   const [error, setError] = useState<string | null>(null);
   const [disabled, setDisabled] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+
+  // Follow the streamed reasoning — matters most on short mobile screens
+  // where the progress would otherwise scroll out of view.
+  useEffect(() => {
+    if (scanning && scrollerRef.current) {
+      scrollerRef.current.scrollTop = scrollerRef.current.scrollHeight;
+    }
+  }, [text, toolCalls, scanning]);
 
   if (disabled) return null;
 
@@ -200,7 +209,7 @@ export function KnifeScanDialog({ onProposal }: KnifeScanDialogProps) {
           </Button>
         }
       />
-      <DialogContent className="flex max-h-[85vh] w-full max-w-lg flex-col gap-0 p-0">
+      <DialogContent className="flex max-h-[85dvh] w-full max-w-[calc(100%-2rem)] flex-col gap-0 p-0 sm:max-w-lg">
         <DialogHeader className="border-b border-border p-4">
           <DialogTitle className="flex items-center gap-2">
             <ScanLine className="h-4 w-4" />
@@ -212,7 +221,7 @@ export function KnifeScanDialog({ onProposal }: KnifeScanDialogProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 space-y-4 overflow-y-auto p-4">
+        <div ref={scrollerRef} className="flex-1 space-y-4 overflow-y-auto p-4">
           <div className="space-y-2">
             <Label htmlFor="scan-file">Photo</Label>
             <Input
