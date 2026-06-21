@@ -169,3 +169,23 @@
     color: var(--brass);
   }
 }
+
+/* Rating sparkline: the apex line draws on once, like the stroke of a
+   hone. Static (final state) unless motion is welcome. */
+.spark-edge {
+  stroke-dasharray: var(--edge-len, 600);
+  stroke-dashoffset: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .spark-edge {
+    animation: spark-edge-draw 1100ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  @keyframes spark-edge-draw {
+    from {
+      stroke-dashoffset: var(--edge-len, 600);
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+}

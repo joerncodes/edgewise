@@ -26,6 +26,7 @@ import { Photo } from "@/components/photo";
 import { SessionForm } from "@/components/session-form";
 import { Markdown } from "@/components/markdown";
 import { PropertyList, PropertyRow } from "@/components/property-row";
+import { RatingSparkline } from "@/components/rating-sparkline";
 import { Stars } from "@/components/stars";
 import {
   AlertDialog,
@@ -313,6 +314,7 @@ export default function KnifeDetailPage() {
             </span>
           )}
         </p>
+        <RatingSparkline sessions={knife.sessions} className="w-full max-w-sm" />
         <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"

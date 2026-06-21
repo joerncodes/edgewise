@@ -1,6 +1,6 @@
 ---
 filetype: todo
-status: open
+status: done
 ---
 
 # Rating sparkline on the knife detail page
