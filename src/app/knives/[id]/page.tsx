@@ -2,16 +2,12 @@
 
 import {
   ArrowLeft,
-  Atom,
-  Factory,
   Gem,
-  Grip,
   Handshake,
   Inbox,
   Pencil,
   Plus,
   PocketKnife,
-  Tags,
   Trash2,
   User,
 } from "lucide-react";
@@ -19,13 +15,14 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { EdgeV } from "@/components/edge-v";
 import { ImageGallery } from "@/components/image-gallery";
+import { KnifeChips } from "@/components/knife-chips";
 import { KnifeChat } from "@/components/knife-chat";
 import { KnifeForm } from "@/components/knife-form";
-import { Photo } from "@/components/photo";
+import { CutHero } from "@/components/cut-hero";
 import { SessionForm } from "@/components/session-form";
 import { Markdown } from "@/components/markdown";
-import { PropertyList, PropertyRow } from "@/components/property-row";
 import { RatingSparkline } from "@/components/rating-sparkline";
 import { Stars } from "@/components/stars";
 import {
@@ -41,9 +38,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api-client";
-import { slugify } from "@/lib/storage/ids";
 import { isStrop } from "@/lib/abrasives";
+import { cn } from "@/lib/utils";
 import type {
   Abrasive,
   Knife,
@@ -209,6 +207,17 @@ export default function KnifeDetailPage() {
     }
   }
 
+  // Header "Add session" opens the same form that lives in the sessions
+  // section further down, then scrolls it into view so the user isn't
+  // left wondering where the form went.
+  function openAddSession() {
+    setEditingSessionDate(null);
+    setAddingSession(true);
+    document
+      .getElementById("knife-sessions")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   useEffect(() => {
     api
       .getKnife(id)
@@ -247,7 +256,7 @@ export default function KnifeDetailPage() {
     }
   }
 
-  if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
+  if (loading) return <DetailSkeleton />;
   if (!knife) return <p className="text-sm text-muted-foreground">Not found.</p>;
 
   const sortedSessions = [...knife.sessions].sort((a, b) => b.date.localeCompare(a.date));
@@ -255,17 +264,9 @@ export default function KnifeDetailPage() {
   const hero = knife.images[0];
 
   return (
-    <div className="space-y-12">
-      {hero && (
-        <Photo
-          src={api.imageUrl(knife.id, hero.filename)}
-          alt={hero.caption || knife.name}
-          className="w-full overflow-hidden rounded-md bg-muted/40"
-          imgClassName="h-auto"
-          loadingMinHeight="16rem"
-        />
-      )}
-      <header className="space-y-3">
+    <div className="space-y-10">
+      <header className="space-y-6">
+        <div className="space-y-2">
         <Link
           href="/"
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
@@ -274,6 +275,22 @@ export default function KnifeDetailPage() {
           <PocketKnife className="h-3 w-3" />
           All knives
         </Link>
+        <div className="font-heading text-xs uppercase tracking-wider text-brass">
+          {owner ? (
+            <Link
+              href={`/owners/${owner.id}`}
+              className="inline-flex items-center gap-1.5 hover:underline"
+            >
+              <User className="h-3 w-3" />
+              {owner.name}
+            </Link>
+          ) : (
+            <span className="inline-flex items-center gap-1.5">
+              <User className="h-3 w-3" />
+              {knife.ownerId}
+            </span>
+          )}
+        </div>
         <h1 className="flex flex-wrap items-center gap-3 text-4xl font-semibold tracking-tight text-brass">
           <PocketKnife className="h-8 w-8" />
           {knife.name}
@@ -298,44 +315,64 @@ export default function KnifeDetailPage() {
             </span>
           )}
         </h1>
-        <p className="text-sm text-muted-foreground">
-          {owner ? (
-            <Link
-              href={`/owners/${owner.id}`}
-              className="inline-flex items-center gap-1 hover:text-foreground hover:underline"
-            >
-              <User className="h-3.5 w-3.5" />
-              {owner.name}
-            </Link>
-          ) : (
-            <span className="inline-flex items-center gap-1">
-              <User className="h-3.5 w-3.5" />
-              {knife.ownerId}
-            </span>
-          )}
-        </p>
-        <RatingSparkline sessions={knife.sessions} className="w-full max-w-sm" />
-        <div className="flex flex-wrap gap-2">
+        </div>
+        {hero && (
+          <CutHero
+            src={api.imageUrl(knife.id, hero.filename)}
+            alt={hero.caption || knife.name}
+          />
+        )}
+        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start">
+          <BevelReadout last={last} />
+          <RatingSparkline
+            sessions={knife.sessions}
+            className="w-full max-w-sm sm:flex-1"
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* primary: the thing you do most */}
+          <Button size="xs" onClick={openAddSession} disabled={editing}>
+            <Plus />
+            Add session
+          </Button>
+
+          <span aria-hidden className="mx-0.5 hidden h-5 w-px bg-border sm:block" />
+
+          {/* stateful toggles — brass when active */}
           <Button
             variant="outline"
             size="xs"
+            aria-pressed={knife.backlog}
+            title={knife.backlog ? "Remove from backlog" : "Add to backlog"}
             onClick={toggleBacklog}
             disabled={toggling || editing}
+            className={cn(
+              knife.backlog &&
+                "border-brass/40 bg-brass/10 text-brass hover:bg-brass/20 hover:text-brass",
+            )}
           >
             <Inbox />
-            {knife.backlog ? "Remove from backlog" : "Add to backlog"}
+            Backlog
           </Button>
           <Button
             variant="outline"
             size="xs"
+            aria-pressed={knife.onLoan}
+            title={knife.onLoan ? "Mark as returned" : "Mark as on loan"}
             onClick={toggleOnLoan}
             disabled={togglingLoan || editing}
+            className={cn(
+              knife.onLoan &&
+                "border-brass/40 bg-brass/10 text-brass hover:bg-brass/20 hover:text-brass",
+            )}
           >
             <Handshake />
-            {knife.onLoan ? "Mark as returned" : "Mark as on loan"}
+            On loan
           </Button>
+
+          {/* secondary + destructive, set apart on the right */}
           {!editing && (
-            <>
+            <div className="ml-auto flex flex-wrap items-center gap-2">
               <KnifeChat
                 knifeId={knife.id}
                 knifeName={knife.name}
@@ -366,7 +403,7 @@ export default function KnifeDetailPage() {
                   onDelete={handleDelete}
                 />
               </AlertDialog>
-            </>
+            </div>
           )}
         </div>
       </header>
@@ -397,8 +434,6 @@ export default function KnifeDetailPage() {
       ) : (
         <DetailBody
           knife={knife}
-          owner={owner}
-          last={last}
           sortedSessions={sortedSessions}
           abrasives={abrasives}
           abrasiveById={abrasiveById}
@@ -433,8 +468,6 @@ export default function KnifeDetailPage() {
 
 function DetailBody({
   knife,
-  owner,
-  last,
   sortedSessions,
   abrasives,
   abrasiveById,
@@ -454,8 +487,6 @@ function DetailBody({
   onCloseDeleteSession,
 }: {
   knife: Knife;
-  owner: Owner | null;
-  last: SharpeningSession | undefined;
   sortedSessions: SharpeningSession[];
   abrasives: Abrasive[];
   abrasiveById: Record<string, Abrasive>;
@@ -477,86 +508,7 @@ function DetailBody({
   return (
     <>
       <section>
-        <PropertyList>
-          {owner && (
-            <PropertyRow label="Owner">
-              <Link
-                href={`/owners/${owner.id}`}
-                className="inline-flex items-center gap-1.5 hover:underline"
-              >
-                <User className="h-3.5 w-3.5" />
-                {owner.name}
-              </Link>
-            </PropertyRow>
-          )}
-          <PropertyRow label="Type">
-            {knife.type ? (
-              <span className="inline-flex flex-wrap items-baseline gap-x-1.5">
-                <Link
-                  href={`/types/${slugify(knife.type)}`}
-                  className="inline-flex items-center gap-1.5 hover:underline"
-                >
-                  <Tags className="h-3.5 w-3.5" />
-                  {knife.type}
-                </Link>
-                {knife.subtype && (
-                  <>
-                    <span className="text-muted-foreground/60">—</span>
-                    <Link
-                      href={`/types/${slugify(knife.type)}?subtype=${encodeURIComponent(knife.subtype)}`}
-                      className="text-sm text-muted-foreground hover:text-foreground hover:underline"
-                    >
-                      {knife.subtype}
-                    </Link>
-                  </>
-                )}
-              </span>
-            ) : null}
-          </PropertyRow>
-          <PropertyRow label="Manufacturer">
-            {knife.manufacturer ? (
-              <Link
-                href={`/manufacturers/${slugify(knife.manufacturer)}`}
-                className="inline-flex items-center gap-1.5 hover:underline"
-              >
-                <Factory className="h-3.5 w-3.5" />
-                {knife.manufacturer}
-              </Link>
-            ) : null}
-          </PropertyRow>
-          <PropertyRow label="Steel">
-            {knife.steel ? (
-              <Link
-                href={`/steels/${slugify(knife.steel)}`}
-                className="inline-flex items-center gap-1.5 hover:underline"
-              >
-                <Atom className="h-3.5 w-3.5" />
-                {knife.steel}
-              </Link>
-            ) : null}
-          </PropertyRow>
-          <PropertyRow label="Handle">
-            {knife.handle ? (
-              <Link
-                href={`/handles/${slugify(knife.handle)}`}
-                className="inline-flex items-center gap-1.5 hover:underline"
-              >
-                <Grip className="h-3.5 w-3.5" />
-                {knife.handle}
-              </Link>
-            ) : null}
-          </PropertyRow>
-          {last && (
-            <PropertyRow label="Last sharpened">
-              <span className="font-mono">{formatDate(last.date)}</span>
-              <span className="mx-2 text-muted-foreground">@</span>
-              <span className="font-mono">{last.angle}°</span>
-            </PropertyRow>
-          )}
-          <PropertyRow label="Sharpenings">
-            <span className="font-mono">{knife.sessions.length}</span>
-          </PropertyRow>
-        </PropertyList>
+        <KnifeChips knife={knife} />
       </section>
 
       <ImageGallery
@@ -568,7 +520,7 @@ function DetailBody({
         onDelete={onImageDelete}
       />
 
-      <section className="space-y-3">
+      <section id="knife-sessions" className="scroll-mt-6 space-y-3">
         <div className="flex items-center justify-between gap-3">
           <SectionLabel>
             {knife.sessions.length === 1
@@ -599,9 +551,27 @@ function DetailBody({
           <ol className="relative space-y-5 border-l border-border/60 pl-6">
             {sortedSessions.map((s) => {
               const isEditing = editingSessionDate === s.date;
+              // Marker carries the session's rating: rated → a brass dot
+              // that grows with the score; unrated → a small hollow dot.
+              const rated = typeof s.rating === "number";
+              const half = rated ? Math.round((s.rating as number) * 2) / 2 : 0;
+              const markerSize = rated ? Math.round(6 + half * 1.2) : 8;
               return (
                 <li key={s.date} className="relative">
-                  <span className="absolute -left-[27px] top-2 h-2 w-2 rounded-full bg-border" />
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "absolute rounded-full",
+                      rated ? "bg-brass" : "border border-border bg-card",
+                    )}
+                    style={{
+                      width: markerSize,
+                      height: markerSize,
+                      left: -(24 + markerSize / 2),
+                      top: 11,
+                      transform: "translateY(-50%)",
+                    }}
+                  />
                   {isEditing ? (
                     <SessionForm
                       knifeId={knife.id}
@@ -700,6 +670,71 @@ function DetailBody({
         </section>
       )}
     </>
+  );
+}
+
+function DetailSkeleton() {
+  return (
+    <div className="space-y-10">
+      <header className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-3 w-28" />
+          <Skeleton className="h-9 w-2/3 max-w-md" />
+        </div>
+        <Skeleton className="h-64 w-full rounded-md" />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <Skeleton className="h-[4.75rem] w-56 rounded-lg" />
+          <Skeleton className="h-28 w-full max-w-sm rounded-lg sm:flex-1" />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Skeleton className="h-6 w-24 rounded-md" />
+          <Skeleton className="h-6 w-20 rounded-md" />
+          <Skeleton className="h-6 w-20 rounded-md" />
+        </div>
+      </header>
+      <div className="flex flex-wrap gap-1.5">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-5 w-16 rounded-md" />
+        ))}
+      </div>
+      <div className="space-y-3">
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="h-16 w-full rounded-md" />
+        <Skeleton className="h-16 w-full rounded-md" />
+      </div>
+    </div>
+  );
+}
+
+function BevelReadout({ last }: { last: SharpeningSession | undefined }) {
+  if (!last) {
+    return (
+      <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-card/40 px-4 py-3 text-sm italic text-muted-foreground">
+        No bevel recorded yet
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-4 rounded-lg border border-brass/20 bg-card/60 px-4 py-3 shadow-sm">
+      <EdgeV angle={last.angle} size={56} />
+      <div className="min-w-0">
+        <div className="font-heading text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+          Current bevel
+        </div>
+        <div className="mt-0.5 flex items-baseline gap-1.5 font-mono">
+          <span className="text-3xl font-semibold tracking-tight text-brass">
+            {last.angle}°
+          </span>
+          <span className="text-sm text-muted-foreground">/side</span>
+        </div>
+        <div className="font-mono text-xs text-muted-foreground">
+          {last.angle * 2}° inclusive
+          <span className="mx-1.5 text-muted-foreground/50">·</span>
+          {formatDate(last.date)}
+        </div>
+      </div>
+    </div>
   );
 }
 

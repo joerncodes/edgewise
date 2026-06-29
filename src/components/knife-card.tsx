@@ -1,23 +1,20 @@
 "use client";
 
 import {
-  Atom,
   ChevronDown,
   ChevronRight,
-  Factory,
-  Grip,
   Handshake,
-  Tags,
   User,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { BacklogWaitedBadge } from "@/components/backlog-waited-badge";
+import { EdgeV } from "@/components/edge-v";
+import { KnifeChips } from "@/components/knife-chips";
 import { Photo } from "@/components/photo";
 import { Stars } from "@/components/stars";
 import { api } from "@/lib/api-client";
 import { backlogAgeBucket, inBacklog } from "@/lib/backlog";
-import { slugify } from "@/lib/storage/ids";
 import { cn } from "@/lib/utils";
 import type { Knife, Owner, SharpeningSession } from "@/lib/storage/types";
 
@@ -143,52 +140,7 @@ export function KnifeCard({
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground" />
         </div>
 
-        <div className="relative z-10 flex flex-wrap items-center gap-1.5 text-xs">
-          {knife.manufacturer && (
-            <Link
-              href={`/manufacturers/${slugify(knife.manufacturer)}`}
-              className="inline-flex items-center gap-1 rounded-md border border-brass/40 bg-brass/10 px-1.5 py-0.5 text-brass hover:bg-brass/20"
-            >
-              <Factory className="h-3 w-3" />
-              {knife.manufacturer}
-            </Link>
-          )}
-          {knife.type && (
-            <Link
-              href={`/types/${slugify(knife.type)}`}
-              className="inline-flex items-center gap-1 rounded-md border border-steel/40 bg-steel/10 px-1.5 py-0.5 text-steel hover:bg-steel/20"
-            >
-              <Tags className="h-3 w-3" />
-              {knife.type}
-            </Link>
-          )}
-          {knife.type && knife.subtype && (
-            <Link
-              href={`/types/${slugify(knife.type)}?subtype=${encodeURIComponent(knife.subtype)}`}
-              className="inline-flex items-center rounded-md border border-steel/30 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-steel/80 hover:bg-steel/10"
-            >
-              {knife.subtype}
-            </Link>
-          )}
-          {knife.steel && (
-            <Link
-              href={`/steels/${slugify(knife.steel)}`}
-              className="inline-flex items-center gap-1 rounded-md border border-border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground"
-            >
-              <Atom className="h-3 w-3" />
-              {knife.steel}
-            </Link>
-          )}
-          {knife.handle && (
-            <Link
-              href={`/handles/${slugify(knife.handle)}`}
-              className="inline-flex items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-muted-foreground hover:text-foreground"
-            >
-              <Grip className="h-3 w-3" />
-              {knife.handle}
-            </Link>
-          )}
-        </div>
+        <KnifeChips knife={knife} className="relative z-10" />
 
         <div className="flex items-center gap-3 pt-1">
           {last ? (
@@ -274,38 +226,5 @@ export function KnifeCard({
       )}
       </div>
     </article>
-  );
-}
-
-function EdgeV({ angle }: { angle: number }) {
-  // Knife-edge cross-section: apex pointing down, spine opening up.
-  // The per-side angle is measured from the vertical centerline, so a
-  // smaller angle visibly produces a narrower edge.
-  const len = 24;
-  const rad = (angle * Math.PI) / 180;
-  const dx = len * Math.sin(rad);
-  const dy = len * Math.cos(rad);
-  const apex = { x: 16, y: 26 };
-  return (
-    <svg width="32" height="28" viewBox="0 0 32 28" aria-hidden className="shrink-0">
-      <line
-        x1={apex.x}
-        y1={apex.y}
-        x2={apex.x - dx}
-        y2={apex.y - dy}
-        stroke="var(--brass)"
-        strokeWidth={1.5}
-        strokeLinecap="round"
-      />
-      <line
-        x1={apex.x}
-        y1={apex.y}
-        x2={apex.x + dx}
-        y2={apex.y - dy}
-        stroke="var(--brass)"
-        strokeWidth={1.5}
-        strokeLinecap="round"
-      />
-    </svg>
   );
 }
